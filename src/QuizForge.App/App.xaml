@@ -1,0 +1,34 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:QuizForge.App.ViewModels"
+             xmlns:views="clr-namespace:QuizForge.App.Views"
+             x:Class="QuizForge.App.App"
+             RequestedThemeVariant="Default">
+             <!-- "Default" ThemeVariant follows system theme setting. "Dark" or "Light" are other available options. -->
+
+    <Application.Styles>
+        <FluentTheme />
+    </Application.Styles>
+
+    <Application.DataTemplates>
+        <!-- 题库管理视图数据模板 -->
+        <DataTemplate DataType="{x:Type vm:QuestionBankViewModel}">
+            <views:QuestionBankView/>
+        </DataTemplate>
+        
+        <!-- 模板管理视图数据模板 -->
+        <DataTemplate DataType="{x:Type vm:TemplateViewModel}">
+            <views:TemplateView/>
+        </DataTemplate>
+        
+        <!-- 试卷生成视图数据模板 -->
+        <DataTemplate DataType="{x:Type vm:ExamGenerationViewModel}">
+            <views:ExamGenerationView/>
+        </DataTemplate>
+        
+        <!-- PDF预览视图数据模板 -->
+        <DataTemplate DataType="{x:Type vm:PdfPreviewViewModel}">
+            <views:PdfPreviewView/>
+        </DataTemplate>
+    </Application.DataTemplates>
+</Application>

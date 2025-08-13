@@ -1,0 +1,116 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:QuizForge.App.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="QuizForge.App.Views.QuestionBankView">
+             
+    <Design.DataContext>
+        <vm:QuestionBankViewModel/>
+    </Design.DataContext>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- 顶部工具栏 -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="10" Spacing="10">
+            <Button Command="{Binding ImportQuestionBankCommand}" Content="导入题库" Width="100"/>
+            <Button Command="{Binding AddQuestionCommand}" Content="添加题目" Width="100"/>
+            <Button Command="{Binding DeleteQuestionCommand}" Content="删除题目" Width="100"/>
+            <Button Command="{Binding EditQuestionCommand}" Content="编辑题目" Width="100"/>
+            <Button Command="{Binding PreviewQuestionBankCommand}" Content="预览题库" Width="100"/>
+            
+            <Separator Width="20"/>
+            
+            <TextBox Text="{Binding SearchText, Mode=TwoWay}" Watermark="搜索题目..." Width="200" VerticalAlignment="Center"/>
+            <Button Command="{Binding SearchQuestionsCommand}" Content="搜索" Width="60"/>
+        </StackPanel>
+        
+        <!-- 主内容区 -->
+        <Grid Grid.Row="1" Margin="10,0,10,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="250"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            
+            <!-- 左侧题库列表 -->
+            <Border Grid.Column="0" BorderBrush="#e0e0e0" BorderThickness="1" Margin="0,0,5,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    
+                    <TextBlock Grid.Row="0" Text="题库列表" FontSize="16" FontWeight="Bold" Margin="5"/>
+                    
+                    <ListBox Grid.Row="1" 
+                             ItemsSource="{Binding QuestionBanks}" 
+                             SelectedItem="{Binding SelectedQuestionBank}"
+                             Margin="5">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="5">
+                                    <TextBlock Text="{Binding Name}" FontWeight="Bold"/>
+                                    <TextBlock Text="{Binding Description}" FontSize="12" Foreground="Gray"/>
+                                    <TextBlock Text="{Binding Questions.Count, StringFormat='{}{0} 道题目'}" FontSize="12" Foreground="Blue"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+            
+            <!-- 右侧题目列表 -->
+            <Border Grid.Column="1" BorderBrush="#e0e0e0" BorderThickness="1" Margin="5,0,0,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    
+                    <TextBlock Grid.Row="0" Text="题目列表" FontSize="16" FontWeight="Bold" Margin="5"/>
+                    
+                    <DataGrid Grid.Row="1" 
+                              ItemsSource="{Binding Questions}" 
+                              SelectedItem="{Binding SelectedQuestion}"
+                              AutoGenerateColumns="False"
+                              GridLinesVisibility="All"
+                              CanUserResizeColumns="True"
+                              CanUserSortColumns="True"
+                              Margin="5">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="80" IsReadOnly="True"/>
+                            <DataGridTextColumn Header="类型" Binding="{Binding Type}" Width="100"/>
+                            <DataGridTextColumn Header="难度" Binding="{Binding Difficulty}" Width="80"/>
+                            <DataGridTextColumn Header="类别" Binding="{Binding Category}" Width="100"/>
+                            <DataGridTextColumn Header="内容" Binding="{Binding Content}" Width="*"/>
+                            <DataGridTextColumn Header="分值" Binding="{Binding Points}" Width="80"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </Grid>
+            </Border>
+        </Grid>
+        
+        <!-- 底部状态栏 -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="10,5">
+            <TextBlock Text="{Binding Status}" VerticalAlignment="Center"/>
+            
+            <!-- 导入进度条 -->
+            <ProgressBar Value="{Binding ImportProgress}" 
+                         Maximum="100" 
+                         Width="200" 
+                         Height="20"
+                         IsVisible="{Binding IsImporting}"
+                         Margin="20,0,0,0"/>
+            <TextBlock Text="{Binding ImportProgress, StringFormat='{}{0}%'}" 
+                       IsVisible="{Binding IsImporting}"
+                       VerticalAlignment="Center"
+                       Margin="5,0,0,0"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

@@ -1,0 +1,142 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:QuizForge.App.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="QuizForge.App.Views.PdfPreviewView">
+             
+    <Design.DataContext>
+        <vm:PdfPreviewViewModel/>
+    </Design.DataContext>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- 顶部工具栏 -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="10" Spacing="10">
+            <Button Command="{Binding FirstPageCommand}" Content="首页" Width="60"/>
+            <Button Command="{Binding PreviousPageCommand}" Content="上一页" Width="80"/>
+            <Button Command="{Binding NextPageCommand}" Content="下一页" Width="80"/>
+            <Button Command="{Binding LastPageCommand}" Content="末页" Width="60"/>
+            
+            <Separator Width="20"/>
+            
+            <Button Command="{Binding ZoomInCommand}" Content="放大" Width="60"/>
+            <Button Command="{Binding ZoomOutCommand}" Content="缩小" Width="60"/>
+            <Button Command="{Binding FitToWidthCommand}" Content="适应宽度" Width="100"/>
+            
+            <Separator Width="20"/>
+            
+            <Button Command="{Binding ExportToPdfCommand}" Content="导出PDF" Width="100"/>
+            <Button Command="{Binding PrintCommand}" Content="打印" Width="60"/>
+            <Button Command="{Binding RefreshCommand}" Content="刷新" Width="60"/>
+            <Button Command="{Binding ShowPropertiesCommand}" Content="属性" Width="60"/>
+        </StackPanel>
+        
+        <!-- 主内容区 -->
+        <Grid Grid.Row="1" Margin="10,0,10,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="200"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            
+            <!-- 左侧试卷列表 -->
+            <Border Grid.Column="0" BorderBrush="#e0e0e0" BorderThickness="1" Margin="0,0,5,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    
+                    <TextBlock Grid.Row="0" Text="试卷列表" FontSize="16" FontWeight="Bold" Margin="5"/>
+                    
+                    <ListBox Grid.Row="1" 
+                             ItemsSource="{Binding ExamPapers}" 
+                             SelectedItem="{Binding SelectedExamPaper}"
+                             Margin="5">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="5">
+                                    <TextBlock Text="{Binding Title}" FontWeight="Bold"/>
+                                    <TextBlock Text="{Binding CreatedAt, StringFormat='{}{0:yyyy-MM-dd}'}" FontSize="12" Foreground="Gray"/>
+                                    <TextBlock Text="{Binding TotalPoints, StringFormat='{}{0} 分'}" FontSize="12" Foreground="Blue"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+            
+            <!-- 右侧预览区 -->
+            <Border Grid.Column="1" BorderBrush="#e0e0e0" BorderThickness="1" Margin="5,0,0,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    
+                    <!-- 预览信息区 -->
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="10" Spacing="20">
+                        <TextBlock Text="{Binding SelectedExamPaper.Title}" FontWeight="Bold" FontSize="16"/>
+                        <TextBlock Text="{Binding CurrentPage, StringFormat='{}第 {0} 页'}" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding TotalPages, StringFormat='{}共 {0} 页'}" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding ZoomLevel, StringFormat='{}{0}%'}" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    
+                    <!-- 预览内容区 -->
+                    <Border Grid.Row="1" 
+                            Background="White" 
+                            Margin="10"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center">
+                        <Grid>
+                            <Image Source="/Assets/document-placeholder.png" 
+                                   Stretch="Uniform"
+                                   Width="{Binding ZoomLevel, ConverterParameter=800, Converter={StaticResource ZoomConverter}}"
+                                   Height="{Binding ZoomLevel, ConverterParameter=1130, Converter={StaticResource ZoomConverter}}"
+                                   IsVisible="{Binding SelectedExamPaper, Converter={StaticResource NullToVisibleConverter}}"/>
+                            
+                            <TextBlock Text="请选择一份试卷进行预览" 
+                                       HorizontalAlignment="Center" 
+                                       VerticalAlignment="Center"
+                                       FontSize="16"
+                                       Foreground="Gray"
+                                       IsVisible="{Binding SelectedExamPaper, Converter={StaticResource NullToVisibleConverter}, ConverterParameter=Invert}"/>
+                        </Grid>
+                    </Border>
+                    
+                    <!-- 导出进度区 -->
+                    <Grid Grid.Row="2" Margin="10,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        
+                        <TextBlock Grid.Row="0" Text="导出进度" FontSize="14" FontWeight="Bold" Margin="0,0,0,5"/>
+                        
+                        <StackPanel Grid.Row="1" Orientation="Vertical" Spacing="5">
+                            <ProgressBar Value="{Binding ExportProgress}" 
+                                         Maximum="100" 
+                                         Height="20"
+                                         IsVisible="{Binding IsExporting}"/>
+                            <TextBlock Text="{Binding ExportProgress, StringFormat='{}{0}%'}" 
+                                       IsVisible="{Binding IsExporting}"
+                                       HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+        
+        <!-- 底部状态栏 -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="10,5">
+            <TextBlock Text="{Binding Status}" VerticalAlignment="Center"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

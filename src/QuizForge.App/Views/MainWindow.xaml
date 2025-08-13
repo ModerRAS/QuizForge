@@ -1,0 +1,169 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:QuizForge.App.Views"
+        xmlns:vm="clr-namespace:QuizForge.App.ViewModels"
+        mc:Ignorable="d"
+        x:Class="QuizForge.App.Views.MainWindow"
+        Title="{Binding Title}" Height="800" Width="1200"
+        MinHeight="600" MinWidth="900">
+    
+    <Window.DataContext>
+        <vm:MainViewModel/>
+    </Window.DataContext>
+    
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/> <!-- 菜单栏 -->
+            <RowDefinition Height="Auto"/> <!-- 工具栏 -->
+            <RowDefinition Height="*"/>   <!-- 主内容区 -->
+            <RowDefinition Height="Auto"/> <!-- 状态栏 -->
+        </Grid.RowDefinitions>
+        
+        <!-- 菜单栏 -->
+        <Menu Grid.Row="0" Background="#2b579a" Height="30">
+            <MenuItem Header="文件(_F)">
+                <MenuItem Header="新建题库(_N)" Command="{Binding NewQuestionBankCommand}"/>
+                <MenuItem Header="导入题库(_I)" Command="{Binding ImportQuestionBankCommand}"/>
+                <Separator/>
+                <MenuItem Header="保存(_S)" Command="{Binding SaveCommand}"/>
+                <MenuItem Header="另存为(_A)" Command="{Binding SaveAsCommand}"/>
+                <Separator/>
+                <MenuItem Header="退出(_X)" Command="{Binding ExitCommand}"/>
+            </MenuItem>
+            <MenuItem Header="编辑(_E)">
+                <MenuItem Header="撤销(_U)" Command="{Binding UndoCommand}"/>
+                <MenuItem Header="重做(_R)" Command="{Binding RedoCommand}"/>
+                <Separator/>
+                <MenuItem Header="剪切(_T)" Command="{Binding CutCommand}"/>
+                <MenuItem Header="复制(_C)" Command="{Binding CopyCommand}"/>
+                <MenuItem Header="粘贴(_P)" Command="{Binding PasteCommand}"/>
+                <MenuItem Header="删除(_D)" Command="{Binding DeleteCommand}"/>
+            </MenuItem>
+            <MenuItem Header="视图(_V)">
+                <MenuItem Header="题库管理(_Q)" Command="{Binding ShowQuestionBankViewCommand}" IsToggle="True" IsChecked="{Binding IsQuestionBankViewVisible}"/>
+                <MenuItem Header="模板管理(_T)" Command="{Binding ShowTemplateViewCommand}" IsToggle="True" IsChecked="{Binding IsTemplateViewVisible}"/>
+                <MenuItem Header="试卷生成(_G)" Command="{Binding ShowExamGenerationViewCommand}" IsToggle="True" IsChecked="{Binding IsExamGenerationViewVisible}"/>
+                <MenuItem Header="PDF预览(_P)" Command="{Binding ShowPdfPreviewViewCommand}" IsToggle="True" IsChecked="{Binding IsPdfPreviewViewVisible}"/>
+            </MenuItem>
+            <MenuItem Header="帮助(_H)">
+                <MenuItem Header="查看帮助(_H)" Command="{Binding ShowHelpCommand}"/>
+                <MenuItem Header="关于(_A)" Command="{Binding ShowAboutCommand}"/>
+            </MenuItem>
+        </Menu>
+        
+        <!-- 工具栏 -->
+        <StackPanel Grid.Row="1" Background="#f0f0f0" Height="40" Orientation="Horizontal">
+            <Button ToolTip.Tip="新建题库" Command="{Binding NewQuestionBankCommand}" Margin="5,0">
+                <Image Source="/Assets/new.png" Width="24" Height="24"/>
+            </Button>
+            <Button ToolTip.Tip="导入题库" Command="{Binding ImportQuestionBankCommand}" Margin="5,0">
+                <Image Source="/Assets/import.png" Width="24" Height="24"/>
+            </Button>
+            <Separator Width="10"/>
+            <Button ToolTip.Tip="保存" Command="{Binding SaveCommand}" Margin="5,0">
+                <Image Source="/Assets/save.png" Width="24" Height="24"/>
+            </Button>
+            <Button ToolTip.Tip="生成试卷" Command="{Binding GeneratePaperCommand}" Margin="5,0">
+                <Image Source="/Assets/generate.png" Width="24" Height="24"/>
+            </Button>
+            <Button ToolTip.Tip="导出PDF" Command="{Binding ExportPaperCommand}" Margin="5,0">
+                <Image Source="/Assets/export.png" Width="24" Height="24"/>
+            </Button>
+            <Separator Width="10"/>
+            <Button ToolTip.Tip="设置" Command="{Binding ShowSettingsCommand}" Margin="5,0">
+                <Image Source="/Assets/settings.png" Width="24" Height="24"/>
+            </Button>
+        </StackPanel>
+        
+        <!-- 主内容区 -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="200"/> <!-- 左侧导航栏 -->
+                <ColumnDefinition Width="*"/>    <!-- 右侧内容区 -->
+            </Grid.ColumnDefinitions>
+            
+            <!-- 左侧导航栏 -->
+            <Border Grid.Column="0" Background="#f5f5f5" BorderBrush="#e0e0e0" BorderThickness="0,0,1,0">
+                <ScrollViewer>
+                    <StackPanel Margin="5">
+                        <TextBlock Text="导航" FontSize="16" FontWeight="Bold" Margin="0,10,0,5"/>
+                        <Button Content="题库管理" Command="{Binding ShowQuestionBankViewCommand}"
+                                Margin="0,5" Height="40" HorizontalContentAlignment="Left">
+                            <Button.Styles>
+                                <Style Selector="Button:pointerover">
+                                    <Setter Property="Background" Value="#e0e0e0"/>
+                                </Style>
+                                <Style Selector="Button:pressed">
+                                    <Setter Property="Background" Value="#d0d0d0"/>
+                                </Style>
+                            </Button.Styles>
+                        </Button>
+                        <Button Content="模板管理" Command="{Binding ShowTemplateViewCommand}"
+                                Margin="0,5" Height="40" HorizontalContentAlignment="Left">
+                            <Button.Styles>
+                                <Style Selector="Button:pointerover">
+                                    <Setter Property="Background" Value="#e0e0e0"/>
+                                </Style>
+                                <Style Selector="Button:pressed">
+                                    <Setter Property="Background" Value="#d0d0d0"/>
+                                </Style>
+                            </Button.Styles>
+                        </Button>
+                        <Button Content="试卷生成" Command="{Binding ShowExamGenerationViewCommand}"
+                                Margin="0,5" Height="40" HorizontalContentAlignment="Left">
+                            <Button.Styles>
+                                <Style Selector="Button:pointerover">
+                                    <Setter Property="Background" Value="#e0e0e0"/>
+                                </Style>
+                                <Style Selector="Button:pressed">
+                                    <Setter Property="Background" Value="#d0d0d0"/>
+                                </Style>
+                            </Button.Styles>
+                        </Button>
+                        <Button Content="PDF预览" Command="{Binding ShowPdfPreviewViewCommand}"
+                                Margin="0,5" Height="40" HorizontalContentAlignment="Left">
+                            <Button.Styles>
+                                <Style Selector="Button:pointerover">
+                                    <Setter Property="Background" Value="#e0e0e0"/>
+                                </Style>
+                                <Style Selector="Button:pressed">
+                                    <Setter Property="Background" Value="#d0d0d0"/>
+                                </Style>
+                            </Button.Styles>
+                        </Button>
+                        
+                        <Separator Margin="0,20,0,10"/>
+                        
+                        <TextBlock Text="最近使用" FontSize="16" FontWeight="Bold" Margin="0,10,0,5"/>
+                        <ItemsControl Items="{Binding RecentFiles}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Content="{Binding Name}" Command="{Binding OpenCommand}"
+                                            Margin="0,2" Height="30" HorizontalContentAlignment="Left"
+                                            ToolTip.Tip="{Binding Path}"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+            
+            <!-- 右侧内容区 -->
+            <Grid Grid.Column="1">
+                <ContentControl Content="{Binding CurrentView}"/>
+            </Grid>
+        </Grid>
+        
+        <!-- 状态栏 -->
+        <StackPanel Grid.Row="3" Background="#f0f0f0" Height="25" Orientation="Horizontal">
+            <TextBlock Text="状态: " FontWeight="Bold" VerticalAlignment="Center" Margin="10,0,0,0"/>
+            <TextBlock Text="{Binding Status}" VerticalAlignment="Center"/>
+            <Separator Width="20" Margin="10,0"/>
+            <TextBlock Text="就绪" Foreground="Green" VerticalAlignment="Center"/>
+            <TextBlock Text="QuizForge v1.0" Margin="0,0,10,0" VerticalAlignment="Center"/>
+            <TextBlock Text="{Binding CurrentTime, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}" VerticalAlignment="Center" Margin="0,0,10,0"/>
+        </StackPanel>
+    </Grid>
+</Window>

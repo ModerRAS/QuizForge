@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\QuizForge.Models\QuizForge.Models.csproj" />
+    <ProjectReference Include="..\QuizForge.Data\QuizForge.Data.csproj" />
+    <ProjectReference Include="..\QuizForge.Infrastructure\QuizForge.Infrastructure.csproj" />
+    <ProjectReference Include="..\QuizForge.Core\QuizForge.Core.csproj" />
+  </ItemGroup>
+</Project>

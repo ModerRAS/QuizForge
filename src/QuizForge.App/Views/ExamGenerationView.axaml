@@ -1,0 +1,253 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="clr-namespace:QuizForge.App.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="QuizForge.App.Views.ExamGenerationView">
+             
+    <Design.DataContext>
+        <vm:ExamGenerationViewModel/>
+    </Design.DataContext>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        
+        <!-- 顶部工具栏 -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="10" Spacing="10">
+            <Button Command="{Binding GenerateExamCommand}" Content="生成试卷" Width="100"/>
+            <Button Command="{Binding ExportExamCommand}" Content="导出试卷" Width="100"/>
+            <Button Command="{Binding PreviewExamCommand}" Content="预览试卷" Width="100"/>
+            <Button Command="{Binding ClearAllQuestionsCommand}" Content="清空题目" Width="100"/>
+        </StackPanel>
+        
+        <!-- 主内容区 -->
+        <Grid Grid.Row="1" Margin="10,0,10,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="250"/>
+                <ColumnDefinition Width="250"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            
+            <!-- 左侧题库选择区 -->
+            <Border Grid.Column="0" BorderBrush="#e0e0e0" BorderThickness="1" Margin="0,0,5,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    
+                    <TextBlock Grid.Row="0" Text="题库选择" FontSize="16" FontWeight="Bold" Margin="5"/>
+                    
+                    <ListBox Grid.Row="1" 
+                             ItemsSource="{Binding QuestionBanks}" 
+                             SelectedItem="{Binding SelectedQuestionBank}"
+                             Margin="5">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="5">
+                                    <TextBlock Text="{Binding Name}" FontWeight="Bold"/>
+                                    <TextBlock Text="{Binding Description}" FontSize="12" Foreground="Gray"/>
+                                    <TextBlock Text="{Binding Questions.Count, StringFormat='{}{0} 道题目'}" FontSize="12" Foreground="Blue"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Border>
+            
+            <!-- 中间模板选择区 -->
+            <Border Grid.Column="1" BorderBrush="#e0e0e0" BorderThickness="1" Margin="5,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    
+                    <TextBlock Grid.Row="0" Text="模板选择" FontSize="16" FontWeight="Bold" Margin="5"/>
+                    
+                    <ListBox Grid.Row="1" 
+                             ItemsSource="{Binding Templates}" 
+                             SelectedItem="{Binding SelectedTemplate}"
+                             Margin="5">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Margin="5">
+                                    <TextBlock Text="{Binding Name}" FontWeight="Bold"/>
+                                    <TextBlock Text="{Binding Description}" FontSize="12" Foreground="Gray"/>
+                                    <TextBlock Text="{Binding Sections.Count, StringFormat='{}{0} 个节'}" FontSize="12" Foreground="Blue"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    
+                    <!-- 试卷信息编辑区 -->
+                    <StackPanel Grid.Row="2" Margin="5">
+                        <TextBlock Text="试卷信息" FontSize="14" FontWeight="Bold" Margin="0,5,0,5"/>
+                        
+                        <Grid ColumnDefinitions="70,*" Margin="0,5">
+                            <TextBlock Text="标题:" VerticalAlignment="Center"/>
+                            <TextBox Text="{Binding ExamTitle, Mode=TwoWay}"/>
+                        </Grid>
+                        
+                        <Grid ColumnDefinitions="70,*" Margin="0,5">
+                            <TextBlock Text="描述:" VerticalAlignment="Center"/>
+                            <TextBox Text="{Binding ExamDescription, Mode=TwoWay}" 
+                                     Height="60" 
+                                     TextWrapping="Wrap"
+                                     AcceptsReturn="True"/>
+                        </Grid>
+                        
+                        <Grid ColumnDefinitions="70,*" Margin="0,5">
+                            <TextBlock Text="题目数量:" VerticalAlignment="Center"/>
+                            <NumericUpDown Value="{Binding TotalQuestions}" 
+                                         Minimum="1" 
+                                         Maximum="100" 
+                                         Increment="1"
+                                         FormatString="0"/>
+                        </Grid>
+                        
+                        <CheckBox IsChecked="{Binding IsRandomSelection}" 
+                                  Content="随机选择题目" 
+                                  Margin="0,5"/>
+                        
+                        <Button Command="{Binding AddRandomQuestionsCommand}" 
+                                Content="随机添加题目" 
+                                Width="120" 
+                                HorizontalAlignment="Left"
+                                Margin="0,5"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+            
+            <!-- 右侧题目选择区 -->
+            <Border Grid.Column="2" BorderBrush="#e0e0e0" BorderThickness="1" Margin="5,0,0,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    
+                    <!-- 过滤条件区 -->
+                    <StackPanel Grid.Row="0" Margin="10">
+                        <TextBlock Text="题目过滤" FontSize="16" FontWeight="Bold" Margin="0,0,0,5"/>
+                        
+                        <Grid ColumnDefinitions="70,*" Margin="0,5">
+                            <TextBlock Text="难度:" VerticalAlignment="Center"/>
+                            <ComboBox ItemsSource="{Binding Difficulties}" 
+                                      SelectedItem="{Binding DifficultyFilter}"/>
+                        </Grid>
+                        
+                        <Grid ColumnDefinitions="70,*" Margin="0,5">
+                            <TextBlock Text="类别:" VerticalAlignment="Center"/>
+                            <ComboBox ItemsSource="{Binding Categories}" 
+                                      SelectedItem="{Binding CategoryFilter}"/>
+                        </Grid>
+                        
+                        <Button Command="{Binding FilterQuestionsCommand}" 
+                                Content="应用过滤" 
+                                Width="100" 
+                                HorizontalAlignment="Left"
+                                Margin="0,5"/>
+                    </StackPanel>
+                    
+                    <!-- 可用题目列表 -->
+                    <Grid Grid.Row="1" Margin="10,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10">
+                            <TextBlock Text="可用题目" FontSize="14" FontWeight="Bold"/>
+                            <Button Command="{Binding AddQuestionCommand}" Content="添加" Width="60"/>
+                        </StackPanel>
+                        
+                        <DataGrid Grid.Row="1" 
+                                  ItemsSource="{Binding AvailableQuestions}" 
+                                  SelectedItem="{Binding SelectedQuestion}"
+                                  AutoGenerateColumns="False"
+                                  GridLinesVisibility="All"
+                                  CanUserResizeColumns="True"
+                                  CanUserSortColumns="True"
+                                  Margin="0,5,0,0"
+                                  MaxHeight="150">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="80" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="类型" Binding="{Binding Type}" Width="80"/>
+                                <DataGridTextColumn Header="难度" Binding="{Binding Difficulty}" Width="60"/>
+                                <DataGridTextColumn Header="类别" Binding="{Binding Category}" Width="80"/>
+                                <DataGridTextColumn Header="内容" Binding="{Binding Content}" Width="*"/>
+                                <DataGridTextColumn Header="分值" Binding="{Binding Points}" Width="60"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                    
+                    <!-- 已选题目列表 -->
+                    <Grid Grid.Row="2" Margin="10,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        
+                        <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="10">
+                            <TextBlock Text="已选题目" FontSize="14" FontWeight="Bold"/>
+                            <Button Command="{Binding RemoveQuestionCommand}" Content="移除" Width="60"/>
+                        </StackPanel>
+                        
+                        <DataGrid Grid.Row="1" 
+                                  ItemsSource="{Binding SelectedQuestions}" 
+                                  SelectedItem="{Binding SelectedQuestion}"
+                                  AutoGenerateColumns="False"
+                                  GridLinesVisibility="All"
+                                  CanUserResizeColumns="True"
+                                  CanUserSortColumns="True"
+                                  Margin="0,5,0,0"
+                                  MaxHeight="150">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="80" IsReadOnly="True"/>
+                                <DataGridTextColumn Header="类型" Binding="{Binding Type}" Width="80"/>
+                                <DataGridTextColumn Header="难度" Binding="{Binding Difficulty}" Width="60"/>
+                                <DataGridTextColumn Header="类别" Binding="{Binding Category}" Width="80"/>
+                                <DataGridTextColumn Header="内容" Binding="{Binding Content}" Width="*"/>
+                                <DataGridTextColumn Header="分值" Binding="{Binding Points}" Width="60"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Grid>
+                    
+                    <!-- 生成进度区 -->
+                    <Grid Grid.Row="3" Margin="10,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        
+                        <TextBlock Grid.Row="0" Text="生成进度" FontSize="14" FontWeight="Bold" Margin="0,0,0,5"/>
+                        
+                        <StackPanel Grid.Row="1" Orientation="Vertical" Spacing="5">
+                            <ProgressBar Value="{Binding GenerationProgress}" 
+                                         Maximum="100" 
+                                         Height="20"
+                                         IsVisible="{Binding IsGenerating}"/>
+                            <TextBlock Text="{Binding GenerationProgress, StringFormat='{}{0}%'}" 
+                                       IsVisible="{Binding IsGenerating}"
+                                       HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+        
+        <!-- 底部状态栏 -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="10,5">
+            <TextBlock Text="{Binding Status}" VerticalAlignment="Center"/>
+        </StackPanel>
+    </Grid>
+</UserControl>
