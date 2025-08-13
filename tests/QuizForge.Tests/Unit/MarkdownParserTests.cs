@@ -1,5 +1,6 @@
 using QuizForge.Infrastructure.Parsers;
 using QuizForge.Models;
+using QuizForge.Models.Interfaces;
 using Xunit;
 
 namespace QuizForge.Tests.Unit;

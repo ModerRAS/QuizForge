@@ -1,4 +1,5 @@
 using QuizForge.Models;
+using QuizForge.Core.Layout;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -10,6 +11,9 @@ namespace QuizForge.Core.ContentGeneration;
 public class DynamicContentInserter
 {
     private readonly Dictionary<string, Func<ExamTemplate, List<Question>, string>> _placeholderHandlers;
+    private readonly SealLineLayout _sealLineLayout;
+    private readonly HeaderLayout _headerLayout;
+    private readonly HeaderFooterLayout _headerFooterLayout;
 
     public DynamicContentInserter()
     {
@@ -19,12 +23,21 @@ public class DynamicContentInserter
             { "{SUBJECT}", (template, questions) => EscapeLaTeX(template.Description) },
             { "{EXAM_TIME}", (template, questions) => "120" }, // 默认120分钟
             { "{TOTAL_POINTS}", (template, questions) => questions.Sum(q => q.Points).ToString() },
-            { "{HEADER_CONTENT}", (template, questions) => EscapeLaTeX(template.HeaderContent) },
-            { "{FOOTER_CONTENT}", (template, questions) => EscapeLaTeX(template.FooterContent) },
+            { "{HEADER_CONTENT}", (template, questions) => GenerateHeaderContent(template, questions) },
+            { "{FOOTER_CONTENT}", (template, questions) => GenerateFooterContent(template, questions) },
+            { "{HEADER_FOOTER_SETUP}", (template, questions) => GenerateHeaderFooterSetup(template, questions) },
             { "{CONTENT}", (template, questions) => GenerateContent(template, questions) },
             { "{ANSWER_SHEET_CONTENT}", (template, questions) => GenerateAnswerSheetContent(questions) },
-            { "{LAYOUT_ELEMENTS}", (template, questions) => GenerateLayoutElements(template, questions) }
+            { "{LAYOUT_ELEMENTS}", (template, questions) => GenerateLayoutElements(template, questions) },
+            { "{HEADER_SECTION}", (template, questions) => GenerateHeaderSection(template, questions) },
+            { "{SEAL_LINE_COMMANDS}", (template, questions) => GenerateSealLineCommandDefinition() },
+            { "{SEAL_LINE_CONTENT}", (template, questions) => GenerateSealLine(template, 1, 1) },
+            { "{ANSWER_SHEET_COMMANDS}", (template, questions) => GenerateAnswerSheetCommandDefinition() }
         };
+        
+        _sealLineLayout = new SealLineLayout();
+        _headerLayout = new HeaderLayout();
+        _headerFooterLayout = new HeaderFooterLayout();
     }
 
     /// <summary>
@@ -140,21 +153,145 @@ public class DynamicContentInserter
     private string GenerateLayoutElements(ExamTemplate template, List<Question> questions)
     {
         var layoutBuilder = new StringBuilder();
-        var totalPoints = questions.Sum(q => q.Points);
-
-        // 添加密封线命令定义
-        layoutBuilder.AppendLine(GenerateSealLineCommandDefinition());
 
         // 添加页眉页脚设置
-        layoutBuilder.AppendLine(GenerateHeaderFooterSetup());
-
-        // 添加抬头（第一页）
-        layoutBuilder.AppendLine(GenerateHeader(template, 120, totalPoints, 1));
-
-        // 添加密封线（第一页）
-        layoutBuilder.AppendLine(GenerateSealLine(template, 1, 1));
+        layoutBuilder.AppendLine(GenerateHeaderFooterSetup(template, questions));
 
         return layoutBuilder.ToString();
+    }
+
+    /// <summary>
+    /// 生成页眉内容
+    /// </summary>
+    /// <param name="template">试卷模板</param>
+    /// <param name="questions">题目列表</param>
+    /// <returns>页眉内容的LaTeX代码</returns>
+    private string GenerateHeaderContent(ExamTemplate template, List<Question> questions)
+    {
+        // 如果有HeaderConfig，使用新的方法
+        if (template.HeaderConfig != null)
+        {
+            var totalPoints = questions.Sum(q => q.Points);
+            
+            // 确保HeaderConfig中的基本信息已设置
+            if (string.IsNullOrWhiteSpace(template.HeaderConfig.ExamTitle))
+            {
+                template.HeaderConfig.ExamTitle = template.Name;
+            }
+            
+            if (string.IsNullOrWhiteSpace(template.HeaderConfig.Subject))
+            {
+                template.HeaderConfig.Subject = template.Description;
+            }
+            
+            if (template.HeaderConfig.ExamTime == 0)
+            {
+                template.HeaderConfig.ExamTime = 120;
+            }
+            
+            if (template.HeaderConfig.TotalPoints == 0)
+            {
+                template.HeaderConfig.TotalPoints = totalPoints;
+            }
+            
+            return _headerFooterLayout.GenerateHeader(template.HeaderConfig, template.HeaderConfig.ExamTitle, template.HeaderConfig.Subject, 1);
+        }
+        else
+        {
+            // 使用向后兼容的方法
+            return EscapeLaTeX(template.HeaderContent);
+        }
+    }
+
+    /// <summary>
+    /// 生成页脚内容
+    /// </summary>
+    /// <param name="template">试卷模板</param>
+    /// <param name="questions">题目列表</param>
+    /// <returns>页脚内容的LaTeX代码</returns>
+    private string GenerateFooterContent(ExamTemplate template, List<Question> questions)
+    {
+        // 如果有HeaderConfig，使用新的方法
+        if (template.HeaderConfig != null)
+        {
+            var totalPoints = questions.Sum(q => q.Points);
+            
+            // 确保HeaderConfig中的基本信息已设置
+            if (string.IsNullOrWhiteSpace(template.HeaderConfig.ExamTitle))
+            {
+                template.HeaderConfig.ExamTitle = template.Name;
+            }
+            
+            if (string.IsNullOrWhiteSpace(template.HeaderConfig.Subject))
+            {
+                template.HeaderConfig.Subject = template.Description;
+            }
+            
+            if (template.HeaderConfig.ExamTime == 0)
+            {
+                template.HeaderConfig.ExamTime = 120;
+            }
+            
+            if (template.HeaderConfig.TotalPoints == 0)
+            {
+                template.HeaderConfig.TotalPoints = totalPoints;
+            }
+            
+            return _headerFooterLayout.GenerateFooter(template.HeaderConfig, 1, 1);
+        }
+        else
+        {
+            // 使用向后兼容的方法
+            return EscapeLaTeX(template.FooterContent);
+        }
+    }
+
+    /// <summary>
+    /// 生成页眉页脚设置
+    /// </summary>
+    /// <param name="template">试卷模板</param>
+    /// <param name="questions">题目列表</param>
+    /// <returns>页眉页脚设置的LaTeX代码</returns>
+    private string GenerateHeaderFooterSetup(ExamTemplate template, List<Question> questions)
+    {
+        // 如果有HeaderConfig，使用新的方法
+        if (template.HeaderConfig != null)
+        {
+            var totalPoints = questions.Sum(q => q.Points);
+            
+            // 确保HeaderConfig中的基本信息已设置
+            if (string.IsNullOrWhiteSpace(template.HeaderConfig.ExamTitle))
+            {
+                template.HeaderConfig.ExamTitle = template.Name;
+            }
+            
+            if (string.IsNullOrWhiteSpace(template.HeaderConfig.Subject))
+            {
+                template.HeaderConfig.Subject = template.Description;
+            }
+            
+            if (template.HeaderConfig.ExamTime == 0)
+            {
+                template.HeaderConfig.ExamTime = 120;
+            }
+            
+            if (template.HeaderConfig.TotalPoints == 0)
+            {
+                template.HeaderConfig.TotalPoints = totalPoints;
+            }
+            
+            return _headerFooterLayout.GenerateHeaderFooterSetup();
+        }
+        else
+        {
+            // 使用向后兼容的方法
+            return @"
+% 页眉页脚设置
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}";
+        }
     }
 
     /// <summary>
@@ -230,8 +367,8 @@ public class DynamicContentInserter
             .Replace("{SUBJECT}", EscapeLaTeX(template.Description))
             .Replace("{EXAM_TIME}", "120") // 默认120分钟
             .Replace("{TOTAL_POINTS}", questions.Sum(q => q.Points).ToString())
-            .Replace("{HEADER_CONTENT}", EscapeLaTeX(template.HeaderContent))
-            .Replace("{FOOTER_CONTENT}", EscapeLaTeX(template.FooterContent))
+            .Replace("{HEADER_CONTENT}", GenerateHeaderContent(template, questions))
+            .Replace("{FOOTER_CONTENT}", GenerateFooterContent(template, questions))
             .Replace("{CONTENT}", contentBuilder.ToString())
             .Replace("{ANSWER_SHEET_CONTENT}", answerSheetBuilder.ToString())
             .Replace("{LAYOUT_ELEMENTS}", layoutElements);
@@ -255,7 +392,7 @@ public class DynamicContentInserter
         layoutBuilder.AppendLine(GenerateSealLineCommandDefinition());
 
         // 添加页眉页脚设置
-        layoutBuilder.AppendLine(GenerateHeaderFooterSetup());
+        layoutBuilder.AppendLine(GenerateHeaderFooterSetup(template, questions));
 
         // 为每一页生成布局元素
         for (int page = 1; page <= totalPages; page++)
@@ -269,14 +406,51 @@ public class DynamicContentInserter
             // 添加抬头（只在第一页）
             if (page == 1)
             {
-                layoutBuilder.AppendLine(GenerateHeader(template, 120, totalPoints, page));
+                // 使用HeaderConfig生成抬头
+                if (template.HeaderConfig != null)
+                {
+                    // 确保HeaderConfig中的基本信息已设置
+                    if (string.IsNullOrWhiteSpace(template.HeaderConfig.ExamTitle))
+                    {
+                        template.HeaderConfig.ExamTitle = template.Name;
+                    }
+                    
+                    if (string.IsNullOrWhiteSpace(template.HeaderConfig.Subject))
+                    {
+                        template.HeaderConfig.Subject = template.Description;
+                    }
+                    
+                    if (template.HeaderConfig.ExamTime == 0)
+                    {
+                        template.HeaderConfig.ExamTime = 120;
+                    }
+                    
+                    if (template.HeaderConfig.TotalPoints == 0)
+                    {
+                        template.HeaderConfig.TotalPoints = totalPoints;
+                    }
+                    
+                    layoutBuilder.AppendLine(_headerLayout.GenerateHeader(template.HeaderConfig, page));
+                }
+                else
+                {
+                    // 使用向后兼容的方法生成抬头
+                    layoutBuilder.AppendLine(GenerateHeader(template, 120, totalPoints, page));
+                }
             }
 
             // 添加密封线
             layoutBuilder.AppendLine(GenerateSealLine(template, page, totalPages));
 
             // 添加页眉页脚
-            layoutBuilder.AppendLine(GenerateHeaderFooter(template, template.Name, template.Description, page, totalPages));
+            if (template.HeaderConfig != null)
+            {
+                layoutBuilder.AppendLine(_headerFooterLayout.GenerateHeaderFooter(template.HeaderConfig, template.HeaderConfig.ExamTitle, template.HeaderConfig.Subject, page, totalPages));
+            }
+            else
+            {
+                layoutBuilder.AppendLine(GenerateHeaderFooter(template, template.Name, template.Description, page, totalPages));
+            }
         }
 
         return layoutBuilder.ToString();
@@ -288,21 +462,7 @@ public class DynamicContentInserter
     /// <returns>密封线命令定义的LaTeX代码</returns>
     private string GenerateSealLineCommandDefinition()
     {
-        return @"
-% 密封线命令
-\newcommand{\sealline}[1]{
-  \begin{tikzpicture}[remember picture,overlay]
-    \ifthenelse{\isodd{\thepage}}{
-      % 奇数页密封线在左侧
-      \draw[thick] (current page.north west) ++(0,-2) -- (current page.south west) ++(0,2);
-      \node[rotate=90,anchor=center] at (current page.west) {#1};
-    }{
-      % 偶数页密封线在右侧
-      \draw[thick] (current page.north east) ++(0,-2) -- (current page.south east) ++(0,2);
-      \node[rotate=-90,anchor=center] at (current page.east) {#1};
-    }
-  \end{tikzpicture}
-}";
+        return _sealLineLayout.GenerateSealLineCommandDefinition();
     }
 
     /// <summary>
@@ -311,12 +471,12 @@ public class DynamicContentInserter
     /// <returns>页眉页脚设置的LaTeX代码</returns>
     private string GenerateHeaderFooterSetup()
     {
-        return @"
+        return @”
 % 页眉页脚设置
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[C]{" + "{HEADER_CONTENT}" + @"}
-\fancyfoot[C]{第\thepage 页/共\pageref{LastPage}页}";
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}";
     }
 
     /// <summary>
@@ -354,14 +514,7 @@ public class DynamicContentInserter
     /// <returns>密封线的LaTeX代码</returns>
     private string GenerateSealLine(ExamTemplate template, int pageNumber, int totalPages)
     {
-        return $@"
-% 密封线
-\\sealline{{
-  \\begin{{tabular}}{{ll}}
-    姓名：\\underline{{\\hspace{{3cm}}}} & 考号：\\underline{{\\hspace{{3cm}}}} \\\\
-    班级：\\underline{{\\hspace{{3cm}}}} & 日期：\\underline{{\\hspace{{3cm}}}} \\\\
-  \\end{{tabular}}
-}}";
+        return _sealLineLayout.GenerateSealLine(template, pageNumber, totalPages);
     }
 
     /// <summary>
@@ -378,7 +531,36 @@ public class DynamicContentInserter
         return $@"
 % 页眉页脚
 \\fancyhead[C]{{{EscapeLaTeX(template.HeaderContent)}}}
-\\fancyfoot[C]{{第{pageNumber} 页/共{totalPages}页}}";
+\\fancyfoot[C]{{第{pageNumber}页/共{totalPages}页}}";
+    }
+
+    /// <summary>
+    /// 生成答题卡命令定义
+    /// </summary>
+    /// <returns>答题卡命令定义的LaTeX代码</returns>
+    private string GenerateAnswerSheetCommandDefinition()
+    {
+        return @"
+% 答题卡命令
+\newcommand{\answersheet}[1]{
+  \begin{center}
+    \textbf{答题卡}
+  \end{center}
+  
+  \vspace{0.5cm}
+  
+  \begin{tabular}{|ll|}
+    \hline
+    姓名：\underline{\hspace{3cm}} & 考号：\underline{\hspace{3cm}} \\
+    \hline
+    班级：\underline{\hspace{3cm}} & 日期：\underline{\hspace{3cm}} \\
+    \hline
+  \end{tabular}
+  
+  \vspace{1cm}
+  
+  #1
+}";
     }
 
     /// <summary>

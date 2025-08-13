@@ -4,7 +4,10 @@ using QuizForge.Models;
 using QuizForge.Models.Interfaces;
 using QuizForge.Infrastructure.Engines;
 using QuizForge.Infrastructure.Services;
+using QuizForge.Infrastructure.FileSystems;
+using QuizForge.Services;
 using SixLabors.ImageSharp;
+using Xunit;
 
 namespace QuizForge.Tests.PdfGeneration;
 
@@ -148,11 +151,11 @@ public class PdfGenerationTests : IDisposable
         var previewData = new byte[] { 1, 2, 3, 4, 5 }; // 模拟预览数据
         var pageCount = 3;
         
-        _mockPdfEngine.Setup(x => x.GeneratePreviewAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>()))
+        _mockPdfEngine.Setup(x => x.GeneratePreviewAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
             .ReturnsAsync(previewData);
         
-        _mockPdfEngine.Setup(x => x.GetPageCountAsync(It.IsAny<string>()))
-            .ReturnsAsync(pageCount);
+        _mockPdfEngine.Setup(x => x.GeneratePdfAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(true);
 
         // Act
         var result = await printPreviewService.GenerateAllPreviewImagesAsync(pdfPath);
@@ -174,8 +177,8 @@ public class PdfGenerationTests : IDisposable
         var pdfPath = Path.Combine(_testOutputDirectory, $"{Guid.NewGuid()}.pdf");
         var expectedCount = 5;
         
-        _mockPdfEngine.Setup(x => x.GetPageCountAsync(It.IsAny<string>()))
-            .ReturnsAsync(expectedCount);
+        _mockPdfEngine.Setup(x => x.GeneratePdfAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(true);
 
         // Act
         var result = await printPreviewService.GetPageCountAsync(pdfPath);
@@ -201,8 +204,8 @@ public class PdfGenerationTests : IDisposable
             FileSize = 1024
         };
         
-        _mockPdfEngine.Setup(x => x.GetPdfInfoAsync(It.IsAny<string>()))
-            .ReturnsAsync(expectedPdfInfo);
+        _mockPdfEngine.Setup(x => x.GenerateFromLatexAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(true);
 
         // Act
         var result = await printPreviewService.GetPdfInfoAsync(pdfPath);
@@ -247,6 +250,213 @@ public class PdfGenerationTests : IDisposable
 
         // Act
         var result = await printPreviewService.RotatePreviewImageAsync(originalImageData, angle);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.Length > 0);
+    }
+
+    /// <summary>
+    /// 测试打印预览服务生成指定页面范围的预览图像
+    /// </summary>
+    [Fact]
+    public async Task PrintPreviewService_GeneratePreviewRangeAsync_ShouldReturnImageDataList()
+    {
+        // Arrange
+        var printPreviewService = new PrintPreviewService(_mockPrintPreviewLogger.Object, _mockPdfEngine.Object);
+        var pdfPath = Path.Combine(_testOutputDirectory, $"{Guid.NewGuid()}.pdf");
+        var previewData = new byte[] { 1, 2, 3, 4, 5 }; // 模拟预览数据
+        var startPage = 2;
+        var endPage = 4;
+        
+        _mockPdfEngine.Setup(x => x.GeneratePreviewAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(previewData);
+
+        // Act
+        var result = await printPreviewService.GeneratePreviewRangeAsync(pdfPath, startPage, endPage);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(endPage - startPage + 1, result.Count);
+        Assert.All(result, data => Assert.Equal(previewData, data));
+    }
+
+    /// <summary>
+    /// 测试打印预览服务生成高质量预览图像
+    /// </summary>
+    [Fact]
+    public async Task PrintPreviewService_GenerateHighQualityPreviewAsync_ShouldReturnHighQualityImageData()
+    {
+        // Arrange
+        var printPreviewService = new PrintPreviewService(_mockPrintPreviewLogger.Object, _mockPdfEngine.Object);
+        var pdfPath = Path.Combine(_testOutputDirectory, $"{Guid.NewGuid()}.pdf");
+        var previewData = new byte[] { 1, 2, 3, 4, 5 }; // 模拟预览数据
+        var width = 300;
+        var height = 400;
+        
+        _mockPdfEngine.Setup(x => x.GeneratePreviewAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(previewData);
+
+        // Act
+        var result = await printPreviewService.GenerateHighQualityPreviewAsync(pdfPath, width, height);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(previewData, result);
+    }
+
+    /// <summary>
+    /// 测试打印预览服务生成带密封线标记的预览图像
+    /// </summary>
+    [Fact]
+    public async Task PrintPreviewService_GeneratePreviewWithSealLineAsync_ShouldReturnImageDataWithSealLine()
+    {
+        // Arrange
+        var printPreviewService = new PrintPreviewService(_mockPrintPreviewLogger.Object, _mockPdfEngine.Object);
+        var pdfPath = Path.Combine(_testOutputDirectory, $"{Guid.NewGuid()}.pdf");
+        var previewData = new byte[] { 1, 2, 3, 4, 5 }; // 模拟预览数据
+        var pageNumber = 1;
+        
+        _mockPdfEngine.Setup(x => x.GeneratePreviewAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(previewData);
+
+        // Act
+        var result = await printPreviewService.GeneratePreviewWithSealLineAsync(pdfPath, pageNumber);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.Length > 0);
+    }
+
+    /// <summary>
+    /// 测试打印预览服务生成缩略图预览
+    /// </summary>
+    [Fact]
+    public async Task PrintPreviewService_GenerateThumbnailPreviewAsync_ShouldReturnThumbnailImageData()
+    {
+        // Arrange
+        var printPreviewService = new PrintPreviewService(_mockPrintPreviewLogger.Object, _mockPdfEngine.Object);
+        var pdfPath = Path.Combine(_testOutputDirectory, $"{Guid.NewGuid()}.pdf");
+        var previewData = new byte[] { 1, 2, 3, 4, 5 }; // 模拟预览数据
+        var thumbnailSize = 100;
+        
+        _mockPdfEngine.Setup(x => x.GeneratePreviewAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(previewData);
+
+        // Act
+        var result = await printPreviewService.GenerateThumbnailPreviewAsync(pdfPath, thumbnailSize);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.Length > 0);
+    }
+
+    /// <summary>
+    /// 测试打印预览服务获取预览配置
+    /// </summary>
+    [Fact]
+    public async Task PrintPreviewService_GetPreviewConfigAsync_ShouldReturnPreviewConfig()
+    {
+        // Arrange
+        var printPreviewService = new PrintPreviewService(_mockPrintPreviewLogger.Object, _mockPdfEngine.Object);
+        var expectedConfig = new PreviewConfig
+        {
+            PreviewQuality = PreviewQuality.High,
+            DisplayMode = PreviewDisplayMode.SinglePage,
+            ShowSealLine = true,
+            ZoomLevel = 1.5
+        };
+
+        // Act
+        var result = await printPreviewService.GetPreviewConfigAsync();
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(expectedConfig.PreviewQuality, result.PreviewQuality);
+        Assert.Equal(expectedConfig.DisplayMode, result.DisplayMode);
+        Assert.Equal(expectedConfig.ShowSealLine, result.ShowSealLine);
+        Assert.Equal(expectedConfig.ZoomLevel, result.ZoomLevel);
+    }
+
+    /// <summary>
+    /// 测试打印预览服务设置预览配置
+    /// </summary>
+    [Fact]
+    public async Task PrintPreviewService_SetPreviewConfigAsync_ShouldSetPreviewConfig()
+    {
+        // Arrange
+        var printPreviewService = new PrintPreviewService(_mockPrintPreviewLogger.Object, _mockPdfEngine.Object);
+        var config = new PreviewConfig
+        {
+            PreviewQuality = PreviewQuality.High,
+            DisplayMode = PreviewDisplayMode.SinglePage,
+            ShowSealLine = true,
+            ZoomLevel = 1.5
+        };
+
+        // Act
+        await printPreviewService.SetPreviewConfigAsync(config);
+
+        // Assert
+        var result = await printPreviewService.GetPreviewConfigAsync();
+        Assert.NotNull(result);
+        Assert.Equal(config.PreviewQuality, result.PreviewQuality);
+        Assert.Equal(config.DisplayMode, result.DisplayMode);
+        Assert.Equal(config.ShowSealLine, result.ShowSealLine);
+        Assert.Equal(config.ZoomLevel, result.ZoomLevel);
+    }
+
+    /// <summary>
+    /// 测试打印预览服务裁剪预览图像
+    /// </summary>
+    [Fact]
+    public async Task PrintPreviewService_CropPreviewImageAsync_ShouldReturnCroppedImageData()
+    {
+        // Arrange
+        var printPreviewService = new PrintPreviewService(_mockPrintPreviewLogger.Object, _mockPdfEngine.Object);
+        var originalImageData = new byte[] { 1, 2, 3, 4, 5 }; // 模拟图像数据
+        var cropArea = new Rectangle(10, 10, 100, 100);
+
+        // Act
+        var result = await printPreviewService.CropPreviewImageAsync(originalImageData, cropArea);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.Length > 0);
+    }
+
+    /// <summary>
+    /// 测试打印预览服务调整预览图像亮度
+    /// </summary>
+    [Fact]
+    public async Task PrintPreviewService_AdjustBrightnessAsync_ShouldReturnAdjustedImageData()
+    {
+        // Arrange
+        var printPreviewService = new PrintPreviewService(_mockPrintPreviewLogger.Object, _mockPdfEngine.Object);
+        var originalImageData = new byte[] { 1, 2, 3, 4, 5 }; // 模拟图像数据
+        var brightness = 1.5;
+
+        // Act
+        var result = await printPreviewService.AdjustBrightnessAsync(originalImageData, brightness);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.True(result.Length > 0);
+    }
+
+    /// <summary>
+    /// 测试打印预览服务调整预览图像对比度
+    /// </summary>
+    [Fact]
+    public async Task PrintPreviewService_AdjustContrastAsync_ShouldReturnAdjustedImageData()
+    {
+        // Arrange
+        var printPreviewService = new PrintPreviewService(_mockPrintPreviewLogger.Object, _mockPdfEngine.Object);
+        var originalImageData = new byte[] { 1, 2, 3, 4, 5 }; // 模拟图像数据
+        var contrast = 1.5;
+
+        // Act
+        var result = await printPreviewService.AdjustContrastAsync(originalImageData, contrast);
 
         // Assert
         Assert.NotNull(result);

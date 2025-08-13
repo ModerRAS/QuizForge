@@ -1,4 +1,4 @@
-namespace QuizForge.Core.Exceptions;
+namespace QuizForge.Models.Exceptions;
 
 /// <summary>
 /// QuizForge 自定义异常基类

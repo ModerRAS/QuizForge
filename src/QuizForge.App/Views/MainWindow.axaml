@@ -6,12 +6,9 @@
         xmlns:vm="clr-namespace:QuizForge.App.ViewModels"
         mc:Ignorable="d"
         x:Class="QuizForge.App.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
         Title="{Binding Title}" Height="800" Width="1200"
         MinHeight="600" MinWidth="900">
-    
-    <Window.DataContext>
-        <vm:MainViewModel/>
-    </Window.DataContext>
     
     <Grid>
         <Grid.RowDefinitions>
@@ -42,10 +39,10 @@
                 <MenuItem Header="删除(_D)" Command="{Binding DeleteCommand}"/>
             </MenuItem>
             <MenuItem Header="视图(_V)">
-                <MenuItem Header="题库管理(_Q)" Command="{Binding ShowQuestionBankViewCommand}" IsToggle="True" IsChecked="{Binding IsQuestionBankViewVisible}"/>
-                <MenuItem Header="模板管理(_T)" Command="{Binding ShowTemplateViewCommand}" IsToggle="True" IsChecked="{Binding IsTemplateViewVisible}"/>
-                <MenuItem Header="试卷生成(_G)" Command="{Binding ShowExamGenerationViewCommand}" IsToggle="True" IsChecked="{Binding IsExamGenerationViewVisible}"/>
-                <MenuItem Header="PDF预览(_P)" Command="{Binding ShowPdfPreviewViewCommand}" IsToggle="True" IsChecked="{Binding IsPdfPreviewViewVisible}"/>
+                <RadioButton Content="题库管理(_Q)" Command="{Binding ShowQuestionBankViewCommand}" IsChecked="{Binding IsQuestionBankViewVisible}"/>
+                <RadioButton Content="模板管理(_T)" Command="{Binding ShowTemplateViewCommand}" IsChecked="{Binding IsTemplateViewVisible}"/>
+                <RadioButton Content="试卷生成(_G)" Command="{Binding ShowExamGenerationViewCommand}" IsChecked="{Binding IsExamGenerationViewVisible}"/>
+                <RadioButton Content="PDF预览(_P)" Command="{Binding ShowPdfPreviewViewCommand}" IsChecked="{Binding IsPdfPreviewViewVisible}"/>
             </MenuItem>
             <MenuItem Header="帮助(_H)">
                 <MenuItem Header="查看帮助(_H)" Command="{Binding ShowHelpCommand}"/>
@@ -137,7 +134,7 @@
                         <Separator Margin="0,20,0,10"/>
                         
                         <TextBlock Text="最近使用" FontSize="16" FontWeight="Bold" Margin="0,10,0,5"/>
-                        <ItemsControl Items="{Binding RecentFiles}">
+                        <ItemsControl ItemsSource="{Binding RecentFiles}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <Button Content="{Binding Name}" Command="{Binding OpenCommand}"

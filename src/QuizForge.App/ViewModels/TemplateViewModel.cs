@@ -5,10 +5,12 @@ using QuizForge.Models.Interfaces;
 using System.Collections.ObjectModel;
 using System;
 
-/// <summary>
-/// 模板管理视图模型
-/// </summary>
-public partial class TemplateViewModel : ObservableObject
+namespace QuizForge.App.ViewModels
+{
+    /// <summary>
+    /// 模板管理视图模型
+    /// </summary>
+    public partial class TemplateViewModel : ObservableObject
 {
     private readonly ITemplateService _templateService;
     private readonly IFileService _fileService;
@@ -51,6 +53,14 @@ public partial class TemplateViewModel : ObservableObject
 
     [ObservableProperty]
     private string _difficulty = "中等";
+
+    [ObservableProperty]
+    private ObservableCollection<string> _difficulties = new()
+    {
+        "简单",
+        "中等",
+        "困难"
+    };
 
     public TemplateViewModel(
         ITemplateService templateService,
@@ -349,4 +359,5 @@ public partial class TemplateViewModel : ObservableObject
         // TODO: 实现导入逻辑
         Status = "正在导入模板...";
     }
+}
 }

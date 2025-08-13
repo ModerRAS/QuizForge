@@ -1,9 +1,13 @@
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 using PdfSharp.Pdf;
 using PdfSharp.Pdf.IO;
 using QuizForge.Models;
@@ -14,26 +18,45 @@ using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Formats.Png;
 using SixLabors.Fonts;
 using SixLabors.ImageSharp.Drawing.Processing;
+using QuizForge.Infrastructure.Parsers;
+using QuizForge.Infrastructure.Renderers;
+using QuizForge.Infrastructure.Services;
+using QuizForge.Infrastructure.Exceptions;
 using PdfSharpImage = SixLabors.ImageSharp.Image;
 
 namespace QuizForge.Infrastructure.Engines;
 
 /// <summary>
-/// PDF 引擎实现
+/// PDF 引擎实现，支持原生PDF生成和LaTeX PDF生成
 /// </summary>
 public class PdfEngine : IPdfEngine
 {
     private readonly ILogger<PdfEngine> _logger;
+    private readonly IConfiguration _configuration;
     private readonly string _tempDirectory;
     private readonly string _latexExecutablePath;
+    private readonly IPdfEngine _nativePdfEngine;
+    private readonly IPdfEngine _latexPdfEngine;
+    private readonly PdfErrorReportingService _errorReportingService;
+    private readonly bool _useNativeEngine;
 
     /// <summary>
     /// PDF引擎构造函数
     /// </summary>
     /// <param name="logger">日志记录器</param>
-    public PdfEngine(ILogger<PdfEngine> logger)
+    /// <param name="configuration">配置</param>
+    /// <param name="latexParser">LaTeX解析器</param>
+    /// <param name="mathRenderer">数学公式渲染器</param>
+    /// <param name="errorReportingService">错误报告服务</param>
+    public PdfEngine(ILogger<PdfEngine> logger, IConfiguration configuration, LatexParser latexParser, MathRenderer mathRenderer, PdfErrorReportingService errorReportingService, PdfCacheService cacheService)
     {
         _logger = logger;
+        _configuration = configuration;
+        _errorReportingService = errorReportingService;
+        
+        // 从配置中获取是否使用原生引擎
+        _useNativeEngine = configuration.GetValue<bool>("PdfEngine:UseNativeEngine") ?? true;
+        
         _tempDirectory = Path.Combine(Path.GetTempPath(), "QuizForge", "LaTeX");
         
         // 确保临时目录存在
@@ -44,6 +67,12 @@ public class PdfEngine : IPdfEngine
         
         // 尝试查找LaTeX可执行文件路径
         _latexExecutablePath = FindLatexExecutable();
+        
+        // 创建PDF引擎
+        _nativePdfEngine = new NativePdfEngine(logger, latexParser, mathRenderer, errorReportingService, cacheService, configuration);
+        _latexPdfEngine = new LatexPdfEngine(logger);
+        
+        _logger.LogInformation("PDF引擎初始化完成，使用{EngineType}引擎", _useNativeEngine ? "原生" : "LaTeX");
     }
 
     /// <summary>
@@ -56,35 +85,44 @@ public class PdfEngine : IPdfEngine
     {
         try
         {
-            // 确保输出目录存在
-            var outputDir = Path.GetDirectoryName(outputPath);
-            if (!string.IsNullOrEmpty(outputDir) && !Directory.Exists(outputDir))
+            _logger.LogInformation("开始生成PDF: {OutputPath}", outputPath);
+            
+            // 根据配置选择引擎
+            if (_useNativeEngine)
             {
-                Directory.CreateDirectory(outputDir);
+                return await _nativePdfEngine.GeneratePdfAsync(content, outputPath);
             }
-
-            // 创建PDF文档
-            var document = new PdfDocument();
-            var page = document.AddPage();
-            
-            // 使用PdfSharp添加内容
-            var graphics = PdfSharp.Drawing.XGraphics.FromPdfPage(page);
-            var font = new PdfSharp.Drawing.XFont("SimSun", 12, PdfSharp.Drawing.XFontStyle.Regular);
-            
-            // 将内容写入PDF
-            graphics.DrawString(content, font, PdfSharp.Drawing.XBrushes.Black,
-                new PdfSharp.Drawing.XRect(10, 10, page.Width - 20, page.Height - 20),
-                PdfSharp.Drawing.XStringFormats.TopLeft);
-            
-            // 保存PDF文档
-            document.Save(outputPath);
-            
-            _logger.LogInformation("PDF生成成功: {OutputPath}", outputPath);
-            return true;
+            else
+            {
+                return await _latexPdfEngine.GeneratePdfAsync(content, outputPath);
+            }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "PDF生成失败: {OutputPath}", outputPath);
+            
+            // 报告错误
+            if (ex is PdfGenerationException pdfEx)
+            {
+                _errorReportingService.ReportError(pdfEx, new PdfErrorContext
+                {
+                    Operation = "GeneratePdfAsync",
+                    FilePath = outputPath,
+                    ContentLength = content?.Length ?? 0,
+                    EngineType = _useNativeEngine ? "NativePdfEngine" : "LatexPdfEngine"
+                });
+            }
+            else
+            {
+                _errorReportingService.ReportWarning($"PDF生成失败: {ex.Message}", new PdfErrorContext
+                {
+                    Operation = "GeneratePdfAsync",
+                    FilePath = outputPath,
+                    ContentLength = content?.Length ?? 0,
+                    EngineType = _useNativeEngine ? "NativePdfEngine" : "LatexPdfEngine"
+                });
+            }
+            
             return false;
         }
     }
@@ -99,73 +137,44 @@ public class PdfEngine : IPdfEngine
     {
         try
         {
-            if (string.IsNullOrEmpty(_latexExecutablePath))
+            _logger.LogInformation("开始从LaTeX生成PDF: {OutputPath}", outputPath);
+            
+            // 根据配置选择引擎
+            if (_useNativeEngine)
             {
-                _logger.LogError("未找到LaTeX可执行文件，无法生成PDF");
-                return false;
+                return await _nativePdfEngine.GenerateFromLatexAsync(latexContent, outputPath);
             }
-
-            // 确保输出目录存在
-            var outputDir = Path.GetDirectoryName(outputPath);
-            if (!string.IsNullOrEmpty(outputDir) && !Directory.Exists(outputDir))
+            else
             {
-                Directory.CreateDirectory(outputDir);
+                return await _latexPdfEngine.GenerateFromLatexAsync(latexContent, outputPath);
             }
-
-            // 创建临时LaTeX文件
-            var tempLatexFile = Path.Combine(_tempDirectory, $"{Guid.NewGuid()}.tex");
-            await File.WriteAllTextAsync(tempLatexFile, latexContent);
-
-            // 构建LaTeX编译命令
-            var workingDir = Path.GetDirectoryName(tempLatexFile);
-            var fileNameWithoutExt = Path.GetFileNameWithoutExtension(tempLatexFile);
-            var arguments = $"-interaction=nonstopmode -output-directory=\"{workingDir}\" \"{tempLatexFile}\"";
-
-            // 执行LaTeX编译
-            var processStartInfo = new ProcessStartInfo
-            {
-                FileName = _latexExecutablePath,
-                Arguments = arguments,
-                WorkingDirectory = workingDir,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-
-            using var process = new Process { StartInfo = processStartInfo };
-            process.Start();
-
-            var output = await process.StandardOutput.ReadToEndAsync();
-            var error = await process.StandardError.ReadToEndAsync();
-            await process.WaitForExitAsync();
-
-            if (process.ExitCode != 0)
-            {
-                _logger.LogError("LaTeX编译失败: {Error}", error);
-                return false;
-            }
-
-            // 检查生成的PDF文件
-            var tempPdfFile = Path.Combine(workingDir, $"{fileNameWithoutExt}.pdf");
-            if (!File.Exists(tempPdfFile))
-            {
-                _logger.LogError("LaTeX编译未生成PDF文件");
-                return false;
-            }
-
-            // 将生成的PDF文件移动到目标位置
-            File.Move(tempPdfFile, outputPath, true);
-
-            // 清理临时文件
-            CleanupTempFiles(workingDir, fileNameWithoutExt);
-
-            _logger.LogInformation("LaTeX转PDF成功: {OutputPath}", outputPath);
-            return true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "LaTeX转PDF失败: {OutputPath}", outputPath);
+            
+            // 报告错误
+            if (ex is PdfGenerationException pdfEx)
+            {
+                _errorReportingService.ReportError(pdfEx, new PdfErrorContext
+                {
+                    Operation = "GenerateFromLatexAsync",
+                    FilePath = outputPath,
+                    ContentLength = latexContent?.Length ?? 0,
+                    EngineType = _useNativeEngine ? "NativePdfEngine" : "LatexPdfEngine"
+                });
+            }
+            else
+            {
+                _errorReportingService.ReportWarning($"LaTeX转PDF失败: {ex.Message}", new PdfErrorContext
+                {
+                    Operation = "GenerateFromLatexAsync",
+                    FilePath = outputPath,
+                    ContentLength = latexContent?.Length ?? 0,
+                    EngineType = _useNativeEngine ? "NativePdfEngine" : "LatexPdfEngine"
+                });
+            }
+            
             return false;
         }
     }
@@ -181,61 +190,52 @@ public class PdfEngine : IPdfEngine
     {
         try
         {
-            if (!File.Exists(pdfPath))
+            _logger.LogInformation("开始生成PDF预览: {PdfPath}", pdfPath);
+            
+            // 根据配置选择引擎
+            if (_useNativeEngine)
             {
-                _logger.LogError("PDF文件不存在: {PdfPath}", pdfPath);
-                return Array.Empty<byte>();
+                return await _nativePdfEngine.GeneratePreviewAsync(pdfPath, width, height);
             }
-
-            // 使用PdfSharp读取PDF
-            using var document = PdfReader.Open(pdfPath, PdfDocumentOpenMode.ReadOnly);
-            
-            if (document.PageCount == 0)
+            else
             {
-                _logger.LogError("PDF文件没有页面: {PdfPath}", pdfPath);
-                return Array.Empty<byte>();
+                return await _latexPdfEngine.GeneratePreviewAsync(pdfPath, width, height);
             }
-
-            // 获取第一页
-            var page = document.Pages[0];
-            
-            // 使用ImageSharp创建预览图像
-            using var image = new Image<Rgb24>(width, height);
-            
-            // 设置白色背景
-            image.Mutate(ctx => ctx.BackgroundColor(SixLabors.ImageSharp.Color.White));
-            
-            // 在这里添加PDF页面渲染逻辑
-            // 由于PdfSharp本身不提供直接渲染为图像的功能，
-            // 这里我们创建一个占位图像，实际项目中可能需要使用其他库如PdfiumViewer或MuPDF
-            
-            // 添加预览文本
-            var font = SixLabors.Fonts.SystemFonts.CreateFont("Arial", 16);
-            var textOptions = new RichTextOptions(font)
-            {
-                Origin = new SixLabors.ImageSharp.PointF(10, 10),
-                TabWidth = 4,
-                WrappingLength = width - 20
-            };
-            
-            image.Mutate(ctx =>
-            {
-                ctx.DrawText(
-                    textOptions,
-                    $"PDF预览: {Path.GetFileName(pdfPath)}\n页数: {document.PageCount}\n尺寸: {page.Width}x{page.Height}",
-                    SixLabors.ImageSharp.Color.Black);
-            });
-            
-            // 将图像转换为字节数组
-            using var ms = new MemoryStream();
-            await image.SaveAsPngAsync(ms);
-            
-            _logger.LogInformation("PDF预览图像生成成功: {PdfPath}", pdfPath);
-            return ms.ToArray();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "PDF预览图像生成失败: {PdfPath}", pdfPath);
+            _logger.LogError(ex, "PDF预览生成失败: {PdfPath}", pdfPath);
+            
+            // 报告错误
+            if (ex is PdfGenerationException pdfEx)
+            {
+                _errorReportingService.ReportError(pdfEx, new PdfErrorContext
+                {
+                    Operation = "GeneratePreviewAsync",
+                    FilePath = pdfPath,
+                    EngineType = _useNativeEngine ? "NativePdfEngine" : "LatexPdfEngine",
+                    AdditionalData = new Dictionary<string, object>
+                    {
+                        { "Width", width },
+                        { "Height", height }
+                    }
+                });
+            }
+            else
+            {
+                _errorReportingService.ReportWarning($"PDF预览生成失败: {ex.Message}", new PdfErrorContext
+                {
+                    Operation = "GeneratePreviewAsync",
+                    FilePath = pdfPath,
+                    EngineType = _useNativeEngine ? "NativePdfEngine" : "LatexPdfEngine",
+                    AdditionalData = new Dictionary<string, object>
+                    {
+                        { "Width", width },
+                        { "Height", height }
+                    }
+                });
+            }
+            
             return Array.Empty<byte>();
         }
     }

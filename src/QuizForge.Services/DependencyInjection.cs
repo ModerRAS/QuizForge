@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 using QuizForge.Models.Interfaces;
 using QuizForge.Data.Repositories;
 using QuizForge.Core.Interfaces;
@@ -11,6 +12,7 @@ using QuizForge.Services;
 using QuizForge.Infrastructure.Engines;
 using QuizForge.Infrastructure.Services;
 using QuizForge.Infrastructure.FileSystems;
+using QuizForge.Infrastructure.Renderers;
 
 namespace QuizForge.Services;
 
@@ -23,8 +25,9 @@ public static class DependencyInjection
     /// 注册QuizForge服务
     /// </summary>
     /// <param name="services">服务集合</param>
+    /// <param name="configuration">配置</param>
     /// <returns>服务集合</returns>
-    public static IServiceCollection AddQuizForgeServices(this IServiceCollection services)
+    public static IServiceCollection AddQuizForgeServices(this IServiceCollection services, IConfiguration configuration)
     {
         // 注册仓储
         // services.AddScoped<ITemplateRepository, TemplateRepository>(); // TODO: 实现TemplateRepository类
@@ -41,6 +44,10 @@ public static class DependencyInjection
         
         // 注册解析器
         services.AddScoped<IMarkdownParser, MarkdownParser>();
+        services.AddScoped<LatexParser>();
+        
+        // 注册渲染器
+        services.AddScoped<MathRenderer>();
         
         // 注册内容生成相关服务
         services.AddScoped<ContentGenerator>();
@@ -60,6 +67,16 @@ public static class DependencyInjection
         services.AddScoped<IPrintPreviewService, PrintPreviewService>();
         services.AddScoped<IBatchGenerationService, BatchGenerationService>();
         services.AddScoped<IFileService, FileService>();
+        
+        // 注册PDF错误报告服务
+        services.AddScoped<PdfErrorReportingService>();
+        
+        // 注册PDF缓存服务
+        services.AddScoped<PdfCacheService>();
+        
+        // 注册PDF引擎相关服务
+        services.AddScoped<LatexParser>();
+        services.AddScoped<MathRenderer>();
         
         return services;
     }

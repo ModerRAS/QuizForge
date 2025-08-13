@@ -8,5 +8,6 @@
   <ItemGroup>
     <ProjectReference Include="..\QuizForge.Models\QuizForge.Models.csproj" />
     <ProjectReference Include="..\QuizForge.Data\QuizForge.Data.csproj" />
+    <ProjectReference Include="..\QuizForge.Infrastructure\QuizForge.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

@@ -7,10 +7,12 @@ using System.Timers;
 using System;
 using System.Threading.Tasks;
 
-/// <summary>
-/// 主窗口视图模型
-/// </summary>
-public partial class MainViewModel : ObservableObject
+namespace QuizForge.App.ViewModels
+{
+    /// <summary>
+    /// 主窗口视图模型
+    /// </summary>
+    public partial class MainViewModel : ObservableObject
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly IQuestionService _questionService;
@@ -293,6 +295,7 @@ public partial class MainViewModel : ObservableObject
         Task.Delay(500).Wait();
         Status = "关于已打开";
     }
+}
 }
 
 /// <summary>

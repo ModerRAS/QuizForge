@@ -41,9 +41,24 @@ public class ExamTemplate
     public string FooterContent { get; set; } = string.Empty;
     
     /// <summary>
+    /// 抬头配置
+    /// </summary>
+    public HeaderConfig HeaderConfig { get; set; } = new();
+    
+    /// <summary>
     /// 密封线位置
     /// </summary>
     public SealLinePosition SealLine { get; set; } = SealLinePosition.Left;
+    
+    /// <summary>
+    /// 密封线内容配置
+    /// </summary>
+    public SealLineContentConfig SealLineContent { get; set; } = new SealLineContentConfig();
+    
+    /// <summary>
+    /// 是否启用动态密封线位置（根据页码自动调整）
+    /// </summary>
+    public bool EnableDynamicSealLinePosition { get; set; } = true;
     
     /// <summary>
     /// 创建时间
@@ -122,4 +137,100 @@ public enum SealLinePosition
     /// 底部
     /// </summary>
     Bottom
+}
+
+/// <summary>
+/// 密封线内容配置类
+/// </summary>
+public class SealLineContentConfig
+{
+    /// <summary>
+    /// 是否显示姓名字段
+    /// </summary>
+    public bool ShowName { get; set; } = true;
+    
+    /// <summary>
+    /// 姓名字段标签
+    /// </summary>
+    public string NameLabel { get; set; } = "姓名：";
+    
+    /// <summary>
+    /// 是否显示考号字段
+    /// </summary>
+    public bool ShowStudentId { get; set; } = true;
+    
+    /// <summary>
+    /// 考号字段标签
+    /// </summary>
+    public string StudentIdLabel { get; set; } = "考号：";
+    
+    /// <summary>
+    /// 是否显示班级字段
+    /// </summary>
+    public bool ShowClass { get; set; } = true;
+    
+    /// <summary>
+    /// 班级字段标签
+    /// </summary>
+    public string ClassLabel { get; set; } = "班级：";
+    
+    /// <summary>
+    /// 是否显示日期字段
+    /// </summary>
+    public bool ShowDate { get; set; } = true;
+    
+    /// <summary>
+    /// 日期字段标签
+    /// </summary>
+    public string DateLabel { get; set; } = "日期：";
+    
+    /// <summary>
+    /// 是否显示学校字段
+    /// </summary>
+    public bool ShowSchool { get; set; } = false;
+    
+    /// <summary>
+    /// 学校字段标签
+    /// </summary>
+    public string SchoolLabel { get; set; } = "学校：";
+    
+    /// <summary>
+    /// 是否显示科目字段
+    /// </summary>
+    public bool ShowSubject { get; set; } = false;
+    
+    /// <summary>
+    /// 科目字段标签
+    /// </summary>
+    public string SubjectLabel { get; set; } = "科目：";
+    
+    /// <summary>
+    /// 自定义字段1
+    /// </summary>
+    public string CustomField1Label { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// 是否显示自定义字段1
+    /// </summary>
+    public bool ShowCustomField1 { get; set; } = false;
+    
+    /// <summary>
+    /// 自定义字段2
+    /// </summary>
+    public string CustomField2Label { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// 是否显示自定义字段2
+    /// </summary>
+    public bool ShowCustomField2 { get; set; } = false;
+    
+    /// <summary>
+    /// 下划线长度（厘米）
+    /// </summary>
+    public double UnderlineLength { get; set; } = 3.0;
+    
+    /// <summary>
+    /// 密封线标题
+    /// </summary>
+    public string Title { get; set; } = "密封线";
 }

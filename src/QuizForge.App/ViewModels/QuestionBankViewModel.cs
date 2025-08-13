@@ -7,10 +7,12 @@ using System;
 using System.Threading.Tasks;
 using System.Linq;
 
-/// <summary>
-/// 题库管理视图模型
-/// </summary>
-public partial class QuestionBankViewModel : ObservableObject
+namespace QuizForge.App.ViewModels
+{
+    /// <summary>
+    /// 题库管理视图模型
+    /// </summary>
+    public partial class QuestionBankViewModel : ObservableObject
 {
     private readonly IQuestionService _questionService;
     private readonly IFileService _fileService;
@@ -287,4 +289,5 @@ public partial class QuestionBankViewModel : ObservableObject
         // TODO: 打开题库预览窗口
         Status = $"正在预览题库: {SelectedQuestionBank.Name}";
     }
+}
 }

@@ -4,7 +4,8 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:QuizForge.App.ViewModels"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-             x:Class="QuizForge.App.Views.QuestionBankView">
+             x:Class="QuizForge.App.Views.QuestionBankView"
+             x:DataType="vm:QuestionBankViewModel">
              
     <Design.DataContext>
         <vm:QuestionBankViewModel/>

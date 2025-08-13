@@ -9,45 +9,25 @@
 % 页面设置
 \geometry{a4paper, margin=1in}
 
-% 密封线命令
-\newcommand{\sealline}[1]{
-  \begin{tikzpicture}[remember picture,overlay]
-    \ifthenelse{\isodd{\thepage}}{
-      % 奇数页密封线在左侧
-      \draw[thick] (current page.north west) ++(0,-2) -- (current page.south west) ++(0,2);
-      \node[rotate=90,anchor=center] at (current page.west) {#1};
-    }{
-      % 偶数页密封线在右侧
-      \draw[thick] (current page.north east) ++(0,-2) -- (current page.south east) ++(0,2);
-      \node[rotate=-90,anchor=center] at (current page.east) {#1};
-    }
-  \end{tikzpicture}
-}
+% 密封线命令（由SealLineLayout类动态生成）
+\{SEAL_LINE_COMMANDS\}
 
-% 页眉页脚设置
-\pagestyle{fancy}
-\fancyhf{}
-\fancyhead[C]{\{HEADER_CONTENT\}}
-\fancyfoot[C]{第\thepage 页/共\pageref{LastPage}页}
+% 页眉页脚设置（由HeaderFooterLayout类动态生成）
+\{HEADER_FOOTER_SETUP\}
+
+% 页眉内容（由HeaderFooterLayout类动态生成）
+\{HEADER_CONTENT\}
+
+% 页脚内容（由HeaderFooterLayout类动态生成）
+\{FOOTER_CONTENT\}
 
 \begin{document}
 
-% 抬头部分
-\begin{center}
-{\Large \textbf{\{EXAM_TITLE\}}}\\
-\vspace{0.5cm}
-考试科目：\{SUBJECT\}\\
-考试时间：\{EXAM_TIME\}分钟\\
-总分：\{TOTAL_POINTS\}分
-\end{center}
+% 抬头部分（由HeaderLayout类动态生成）
+\{HEADER_SECTION\}
 
-% 密封线
-\sealline{
-  \begin{tabular}{ll}
-    姓名：\underline{\hspace{3cm}} & 考号：\underline{\hspace{3cm}} \\
-    班级：\underline{\hspace{3cm}} & 日期：\underline{\hspace{3cm}} \\
-  \end{tabular}
-}
+% 密封线（由SealLineLayout类动态生成）
+\{SEAL_LINE_CONTENT\}
 
 \vspace{1cm}
 

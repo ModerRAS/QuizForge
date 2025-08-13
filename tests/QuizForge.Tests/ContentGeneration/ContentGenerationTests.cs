@@ -3,6 +3,7 @@ using QuizForge.Core.ContentGeneration;
 using QuizForge.Core.Interfaces;
 using QuizForge.Models.Interfaces;
 using Moq;
+using Xunit;
 
 namespace QuizForge.Tests.ContentGeneration;
 
@@ -301,7 +302,7 @@ public class ContentGenerationTests
         _mockTemplateRepository.Setup(r => r.GetByIdAsync(templateId)).ReturnsAsync(template);
         _mockQuestionRepository.Setup(r => r.GetByIdAsync(questionBankId)).ReturnsAsync(questionBank);
         _mockQuestionProcessor.Setup(p => p.ProcessQuestionBank(questionBank)).Returns(questionBank);
-        _mockQuestionProcessor.Setup(p => p.GetRandomQuestions(2, questionBank))
+        _mockQuestionProcessor.Setup(p => p.GetRandomQuestions(2, questionBank, null, null))
             .Returns(questionBank.Questions);
 
         // Act

@@ -7,10 +7,12 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 
-/// <summary>
-/// 试卷生成视图模型
-/// </summary>
-public partial class ExamGenerationViewModel : ObservableObject
+namespace QuizForge.App.ViewModels
+{
+    /// <summary>
+    /// 试卷生成视图模型
+    /// </summary>
+    public partial class ExamGenerationViewModel : ObservableObject
 {
     private readonly IQuestionService _questionService;
     private readonly ITemplateService _templateService;
@@ -55,6 +57,12 @@ public partial class ExamGenerationViewModel : ObservableObject
 
     [ObservableProperty]
     private string _categoryFilter = "全部";
+
+    [ObservableProperty]
+    private ObservableCollection<string> _difficulties = new() { "全部", "1", "2", "3" };
+
+    [ObservableProperty]
+    private ObservableCollection<string> _categories = new() { "全部", "代数", "几何" };
 
     [ObservableProperty]
     private bool _isRandomSelection = true;
@@ -339,4 +347,5 @@ public partial class ExamGenerationViewModel : ObservableObject
         // TODO: 打开试卷预览窗口
         Status = $"正在预览试卷: {GeneratedExamPaper.Title}";
     }
+}
 }

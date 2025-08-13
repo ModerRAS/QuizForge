@@ -21,15 +21,21 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Moq" Version="4.20.69" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\QuizForge.App\QuizForge.App.csproj" />
-    <ProjectReference Include="..\..\src\QuizForge.Core\QuizForge.Core.csproj" />
-    <ProjectReference Include="..\..\src\QuizForge.Data\QuizForge.Data.csproj" />
-    <ProjectReference Include="..\..\src\QuizForge.Infrastructure\QuizForge.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\src\QuizForge.Services\QuizForge.Services.csproj" />
     <ProjectReference Include="..\..\src\QuizForge.Models\QuizForge.Models.csproj" />
+    <ProjectReference Include="..\..\src\QuizForge.Services\QuizForge.Services.csproj" />
+    <ProjectReference Include="..\..\src\QuizForge.Infrastructure\QuizForge.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.test.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
