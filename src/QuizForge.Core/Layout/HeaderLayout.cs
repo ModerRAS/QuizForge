@@ -55,7 +55,7 @@ public class HeaderLayout
         }
 
         var headerBuilder = new StringBuilder();
-        string fontSizeCmd = GetFontSizeCommand(config.FontSize);
+        string fontSizeCmd = GetFontSizeCommand(config.TitleFontSize);
         string alignEnv = GetAlignmentEnvironment(config.Alignment);
 
         // 开始抬头部分
@@ -64,7 +64,7 @@ public class HeaderLayout
 
         // 添加试卷标题（使用更大的字体和粗体）
         string titleFormat = config.TitleBold ? @"\textbf" : "";
-        headerBuilder.AppendLine($@"{{\Large {titleFormat}{{{EscapeLaTeX(config.ExamTitle)}}}}}}");
+        headerBuilder.AppendLine(string.Format(@"{{\Large {0}{{{1}}}}}}", titleFormat, EscapeLaTeX(config.ExamTitle)));
         headerBuilder.AppendLine(@"\vspace{0.8cm}");
 
         // 添加水平分割线
@@ -87,9 +87,9 @@ public class HeaderLayout
         headerBuilder.AppendLine($@"\textbf{{总分}}：{config.TotalPoints}分 & ");
         
         // 考试日期
-        if (config.ExamDate.HasValue)
+        if (!string.IsNullOrWhiteSpace(config.ExamDate))
         {
-            headerBuilder.AppendLine($@"\textbf{{考试日期}}：{config.ExamDate.Value:yyyy-MM-dd} \\");
+            headerBuilder.AppendLine($@"\textbf{{考试日期}}：{EscapeLaTeX(config.ExamDate)} \\");
         }
         else
         {
@@ -119,7 +119,7 @@ public class HeaderLayout
         }
 
         var headerBuilder = new StringBuilder();
-        string fontSizeCmd = GetFontSizeCommand(config.FontSize);
+        string fontSizeCmd = GetFontSizeCommand(config.TitleFontSize);
         string alignEnv = GetAlignmentEnvironment(config.Alignment);
 
         // 开始抬头部分
@@ -128,7 +128,7 @@ public class HeaderLayout
 
         // 添加试卷标题（使用粗体）
         string titleFormat = config.TitleBold ? @"\textbf" : "";
-        headerBuilder.AppendLine($@"{{{fontSizeCmd} {titleFormat}{{{EscapeLaTeX(config.ExamTitle)}}}}}}");
+        headerBuilder.AppendLine(string.Format(@"{{{0} {1}{{{2}}}}}}", fontSizeCmd, titleFormat, EscapeLaTeX(config.ExamTitle)));
         headerBuilder.AppendLine(@"\vspace{0.5cm}");
 
         // 添加水平分割线（细线）
@@ -168,7 +168,7 @@ public class HeaderLayout
         }
 
         var headerBuilder = new StringBuilder();
-        string fontSizeCmd = GetFontSizeCommand(config.FontSize);
+        string fontSizeCmd = GetFontSizeCommand(config.TitleFontSize);
         string alignEnv = GetAlignmentEnvironment(config.Alignment);
 
         // 开始抬头部分
@@ -177,7 +177,7 @@ public class HeaderLayout
 
         // 添加试卷标题（使用大号字体和粗体）
         string titleFormat = config.TitleBold ? @"\textbf" : "";
-        headerBuilder.AppendLine($@"{{\LARGE {titleFormat}{{{EscapeLaTeX(config.ExamTitle)}}}}}}");
+        headerBuilder.AppendLine(string.Format(@"{{\LARGE {0}{{{1}}}}}}", titleFormat, EscapeLaTeX(config.ExamTitle)));
         headerBuilder.AppendLine(@"\vspace{0.8cm}");
 
         // 添加水平分割线（双线）
@@ -201,9 +201,9 @@ public class HeaderLayout
         headerBuilder.AppendLine(@"\vspace{0.3cm}");
 
         // 第二行：考试日期、学校和考试地点
-        if (config.ExamDate.HasValue)
+        if (!string.IsNullOrWhiteSpace(config.ExamDate))
         {
-            headerBuilder.AppendLine($@"\textbf{{考试日期}}：{config.ExamDate.Value:yyyy-MM-dd} & ");
+            headerBuilder.AppendLine($@"\textbf{{考试日期}}：{EscapeLaTeX(config.ExamDate)} & ");
         }
         else
         {
@@ -554,7 +554,7 @@ public class HeaderLayout
         headerBuilder.AppendLine(@"\begin{center}");
 
         // 添加试卷标题
-        headerBuilder.AppendLine($@"{{\Large \textbf{{{EscapeLaTeX(template.Name)}}}}}");
+        headerBuilder.AppendLine($@"{{\Large \textbf{{{EscapeLaTeX(template.Name)}}}}}}}}}");
         headerBuilder.AppendLine(@"\vspace{0.5cm}");
 
         // 添加考试科目
@@ -599,7 +599,7 @@ public class HeaderLayout
         headerBuilder.AppendLine(@"\begin{center}");
 
         // 添加试卷标题
-        headerBuilder.AppendLine($@"{{\Large \textbf{{{EscapeLaTeX(examTitle)}}}}}");
+        headerBuilder.AppendLine($@"{{\Large \textbf{{{EscapeLaTeX(examTitle)}}}}}}}}}");
         headerBuilder.AppendLine(@"\vspace{0.5cm}");
 
         // 添加考试科目

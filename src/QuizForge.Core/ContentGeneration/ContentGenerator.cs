@@ -159,11 +159,11 @@ public class ContentGenerator
             content = EscapeLaTeX(content);
             
             // 将下划线替换为LaTeX格式的填空线
-            content = Regex.Replace(content, "_{3,}", $"\\underline{{\\hspace{{{_config.BlankLineLength}}}}}");
+            content = Regex.Replace(content, "_{3,}", $"\\underline{{\\hspace{{{_config.BlankLineLength}}}}}}}}}");
             
             // 处理其他可能的填空标记，如 [blank] 或 ( )
-            content = Regex.Replace(content, @"\[blank\]", $"\\underline{{\\hspace{{{_config.BlankLineLength}}}}}");
-            content = Regex.Replace(content, @"\(\s*\)", $"\\underline{{\\hspace{{{_config.BlankLineLength}}}}}");
+            content = Regex.Replace(content, @"\[blank\]", $"\\underline{{\\hspace{{{_config.BlankLineLength}}}}}}}}}");
+            content = Regex.Replace(content, @"\(\s*\)", $"\\underline{{\\hspace{{{_config.BlankLineLength}}}}}}}}}");
             
             contentBuilder.AppendLine(content);
             contentBuilder.AppendLine();
@@ -393,7 +393,7 @@ public class ContentGenerator
                 case "选择题":
                 case "判断题":
                     var mcTitle = string.Format(_config.QuestionNumberFormat, questionNumber);
-                    contentBuilder.AppendLine($"\\textbf{{{mcTitle}}} \\underline{{\\hspace{{{_config.AnswerSheetChoiceWidth}}}}}}");
+                    contentBuilder.AppendLine(string.Format("\\textbf{{{0}}} \\underline{{\\hspace{{{1}}}}}}", mcTitle, _config.AnswerSheetChoiceWidth));
                     
                     if (_config.ShowPoints)
                     {
@@ -403,7 +403,7 @@ public class ContentGenerator
                     
                 case "填空题":
                     var fbTitle = string.Format(_config.QuestionNumberFormat, questionNumber);
-                    contentBuilder.AppendLine($"\\textbf{{{fbTitle}}} \\underline{{\\hspace{{{_config.AnswerSheetBlankWidth}}}}}}");
+                    contentBuilder.AppendLine(string.Format("\\textbf{{{0}}} \\underline{{\\hspace{{{1}}}}}}", fbTitle, _config.AnswerSheetBlankWidth));
                     
                     if (_config.ShowPoints)
                     {
@@ -425,7 +425,7 @@ public class ContentGenerator
                     
                 default:
                     var genericTitle = string.Format(_config.QuestionNumberFormat, questionNumber);
-                    contentBuilder.AppendLine($"\\textbf{{{genericTitle}}} \\underline{{\\hspace{{{_config.AnswerSheetBlankWidth}}}}}}");
+                    contentBuilder.AppendLine(string.Format("\\textbf{{{0}}} \\underline{{\\hspace{{{1}}}}}}", genericTitle, _config.AnswerSheetBlankWidth));
                     
                     if (_config.ShowPoints)
                     {

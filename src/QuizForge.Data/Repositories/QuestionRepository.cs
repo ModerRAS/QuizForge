@@ -310,4 +310,25 @@ public class QuestionRepository : IQuestionRepository
             throw new Exception($"根据难度获取题目失败: {ex.Message}", ex);
         }
     }
+
+    /// <summary>
+    /// 获取所有题目
+    /// </summary>
+    /// <returns>题目列表</returns>
+    public async Task<List<Question>> GetAllQuestionsAsync()
+    {
+        try
+        {
+            return await _context.Questions
+                .Include(q => q.Options)
+                .OrderBy(q => q.Category)
+                .ThenBy(q => q.Difficulty)
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            // 在实际应用中，这里应该记录日志
+            throw new Exception($"获取所有题目失败: {ex.Message}", ex);
+        }
+    }
 }

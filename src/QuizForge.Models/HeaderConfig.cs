@@ -168,6 +168,11 @@ public class HeaderConfig
     public bool ShowPageNumberInHeader { get; set; } = false;
     
     /// <summary>
+    /// 是否显示页脚
+    /// </summary>
+    public bool ShowFooter { get; set; } = true;
+    
+    /// <summary>
     /// 页码位置
     /// </summary>
     public PageNumberPosition PageNumberPosition { get; set; } = PageNumberPosition.Center;
@@ -234,6 +239,11 @@ public enum HeaderFontSize
     /// 正常字体
     /// </summary>
     Normal,
+    
+    /// <summary>
+    /// 中号字体
+    /// </summary>
+    Medium,
     
     /// <summary>
     /// 大号字体

@@ -2,6 +2,8 @@ using QuizForge.Models;
 using QuizForge.Models.Interfaces;
 using QuizForge.Core.ContentGeneration;
 using QuizForge.Core.Interfaces;
+using QuizForge.Infrastructure.Engines;
+using Microsoft.Extensions.Logging;
 
 namespace QuizForge.Services;
 
@@ -58,8 +60,19 @@ public class GenerationService : IGenerationService
             throw new InvalidOperationException($"找不到ID为 {examPaper.TemplateId} 的模板");
         }
 
+        // 创建HeaderConfig
+        var headerConfig = new HeaderConfig
+        {
+            ExamTitle = examPaper.Title,
+            Subject = "考试科目",
+            ExamTime = 120,
+            SchoolName = "",
+            Class = "",
+            ExamDate = examPaper.CreatedAt.ToString("yyyy-MM-dd")
+        };
+        
         // 生成LaTeX内容
-        return await _examPaperGenerator.GenerateLaTeXContentAsync(template, examPaper.Questions);
+        return await _examPaperGenerator.GenerateLaTeXContentAsync(template, examPaper.Questions, headerConfig);
     }
 
     /// <summary>
@@ -74,10 +87,34 @@ public class GenerationService : IGenerationService
             throw new ArgumentException("LaTeX内容不能为空", nameof(latexContent));
         }
 
-        // TODO: 实现LaTeX到PDF的转换和预览生成
-        // 这里暂时返回一个空的内存流
-        await Task.CompletedTask;
-        return new MemoryStream();
+        // 使用PDF引擎生成PDF
+        var pdfEngine = new LatexPdfEngine(new LoggerFactory().CreateLogger<PdfEngine>());
+        
+        // 创建临时PDF文件路径
+        var tempPdfPath = Path.Combine(Path.GetTempPath(), $"QuizForge_Preview_{Guid.NewGuid()}.pdf");
+        
+        try
+        {
+            // 生成PDF
+            var success = await pdfEngine.GenerateFromLatexAsync(latexContent, tempPdfPath);
+            
+            if (!success)
+            {
+                throw new InvalidOperationException("PDF生成失败");
+            }
+            
+            // 读取PDF文件
+            var pdfBytes = await File.ReadAllBytesAsync(tempPdfPath);
+            return new MemoryStream(pdfBytes);
+        }
+        finally
+        {
+            // 清理临时文件
+            if (File.Exists(tempPdfPath))
+            {
+                File.Delete(tempPdfPath);
+            }
+        }
     }
 
     /// <summary>

@@ -75,6 +75,21 @@ public class MarkdownParser : IMarkdownParser
                 currentQuestionType = "选择题";
                 continue;
             }
+            else if (trimmedLine.StartsWith("### 单选题"))
+            {
+                currentQuestionType = "单选题";
+                continue;
+            }
+            else if (trimmedLine.StartsWith("### 多选题"))
+            {
+                currentQuestionType = "多选题";
+                continue;
+            }
+            else if (trimmedLine.StartsWith("### 判断题"))
+            {
+                currentQuestionType = "判断题";
+                continue;
+            }
             else if (trimmedLine.StartsWith("### 填空题"))
             {
                 currentQuestionType = "填空题";
@@ -83,6 +98,21 @@ public class MarkdownParser : IMarkdownParser
             else if (trimmedLine.StartsWith("### 简答题"))
             {
                 currentQuestionType = "简答题";
+                continue;
+            }
+            else if (trimmedLine.StartsWith("### 论述题"))
+            {
+                currentQuestionType = "论述题";
+                continue;
+            }
+            else if (trimmedLine.StartsWith("### 编程题"))
+            {
+                currentQuestionType = "编程题";
+                continue;
+            }
+            else if (trimmedLine.StartsWith("### 应用题"))
+            {
+                currentQuestionType = "应用题";
                 continue;
             }
 
@@ -110,9 +140,9 @@ public class MarkdownParser : IMarkdownParser
                 };
             }
             // 解析选项
-            else if (currentQuestionType == "选择题" && Regex.IsMatch(trimmedLine, @"^-\s*[A-D]\.\s*(.+)$"))
+            else if ((currentQuestionType == "选择题" || currentQuestionType == "单选题" || currentQuestionType == "多选题") && Regex.IsMatch(trimmedLine, @"^-\s*[A-Z]\.\s*(.+)$"))
             {
-                var optionMatch = Regex.Match(trimmedLine, @"^-\s*([A-D])\.\s*(.+)$");
+                var optionMatch = Regex.Match(trimmedLine, @"^-\s*([A-Z])\.\s*(.+)$");
                 if (optionMatch.Success)
                 {
                     currentQuestion.Options.Add(new QuestionOption
@@ -124,18 +154,60 @@ public class MarkdownParser : IMarkdownParser
                     });
                 }
             }
+            // 解析判断题选项
+            else if (currentQuestionType == "判断题" && Regex.IsMatch(trimmedLine, @"^-\s*(正确|错误|√|×|T|F)\s*$"))
+            {
+                var optionMatch = Regex.Match(trimmedLine, @"^-\s*(正确|错误|√|×|T|F)\s*$");
+                if (optionMatch.Success)
+                {
+                    var optionText = optionMatch.Groups[1].Value.Trim();
+                    var normalizedText = NormalizeJudgmentOption(optionText);
+                    
+                    currentQuestion.Options.Add(new QuestionOption
+                    {
+                        Id = Guid.NewGuid(),
+                        Key = normalizedText,
+                        Value = optionText,
+                        IsCorrect = false
+                    });
+                }
+            }
             // 解析答案
             else if (trimmedLine.StartsWith("- 答案："))
             {
                 var answer = trimmedLine.Substring("- 答案：".Length).Trim();
                 currentQuestion.CorrectAnswer = answer;
 
-                // 如果是选择题，标记正确选项
-                if (currentQuestionType == "选择题")
+                // 如果是单选题或多选题，标记正确选项
+                if (currentQuestionType == "选择题" || currentQuestionType == "单选题")
                 {
                     foreach (var option in currentQuestion.Options)
                     {
                         if (option.Key.Equals(answer, StringComparison.OrdinalIgnoreCase))
+                        {
+                            option.IsCorrect = true;
+                        }
+                    }
+                }
+                // 如果是多选题，处理多个答案
+                else if (currentQuestionType == "多选题")
+                {
+                    var answers = answer.Split(new[] { ',', '，', '、', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (var option in currentQuestion.Options)
+                    {
+                        if (answers.Contains(option.Key, StringComparer.OrdinalIgnoreCase))
+                        {
+                            option.IsCorrect = true;
+                        }
+                    }
+                }
+                // 如果是判断题，标记正确选项
+                else if (currentQuestionType == "判断题")
+                {
+                    var normalizedAnswer = NormalizeJudgmentOption(answer);
+                    foreach (var option in currentQuestion.Options)
+                    {
+                        if (option.Key.Equals(normalizedAnswer, StringComparison.OrdinalIgnoreCase))
                         {
                             option.IsCorrect = true;
                         }
@@ -151,6 +223,21 @@ public class MarkdownParser : IMarkdownParser
         }
 
         return questionBank;
+    }
+
+    /// <summary>
+    /// 标准化判断题选项
+    /// </summary>
+    /// <param name="option">选项文本</param>
+    /// <returns>标准化后的选项文本</returns>
+    private string NormalizeJudgmentOption(string option)
+    {
+        return option.ToLower() switch
+        {
+            "正确" or "√" or "t" => "正确",
+            "错误" or "×" or "f" => "错误",
+            _ => option
+        };
     }
     
     /// <summary>
@@ -173,7 +260,7 @@ public class MarkdownParser : IMarkdownParser
             var hasTitle = Regex.IsMatch(markdown, @"^# .+$", RegexOptions.Multiline);
             
             // 检查是否包含题目类型
-            var hasQuestionTypes = Regex.IsMatch(markdown, @"^### (选择题|填空题|简答题)$", RegexOptions.Multiline);
+            var hasQuestionTypes = Regex.IsMatch(markdown, @"^### (选择题|单选题|多选题|判断题|填空题|简答题|论述题|编程题|应用题)$", RegexOptions.Multiline);
             
             // 检查是否包含题目
             var hasQuestions = Regex.IsMatch(markdown, @"^\d+\.\s.+$", RegexOptions.Multiline);

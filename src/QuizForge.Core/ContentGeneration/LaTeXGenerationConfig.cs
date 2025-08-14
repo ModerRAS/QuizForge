@@ -102,4 +102,28 @@ public class LaTeXGenerationConfig
     /// </summary>
     [JsonPropertyName("customCommands")]
     public List<string> CustomCommands { get; set; } = new();
+
+    /// <summary>
+    /// 答题卡选择题宽度
+    /// </summary>
+    [JsonPropertyName("answerSheetChoiceWidth")]
+    public string AnswerSheetChoiceWidth { get; set; } = "3cm";
+
+    /// <summary>
+    /// 答题卡填空题宽度
+    /// </summary>
+    [JsonPropertyName("answerSheetBlankWidth")]
+    public string AnswerSheetBlankWidth { get; set; } = "5cm";
+
+    /// <summary>
+    /// 答题卡简答题高度
+    /// </summary>
+    [JsonPropertyName("answerSheetEssayHeight")]
+    public string AnswerSheetEssayHeight { get; set; } = "5cm";
+
+    /// <summary>
+    /// 章节命令
+    /// </summary>
+    [JsonPropertyName("sectionCommand")]
+    public string SectionCommand { get; set; } = "subsection*";
 }

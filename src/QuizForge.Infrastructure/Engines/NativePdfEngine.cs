@@ -4,6 +4,9 @@ using Microsoft.Extensions.Logging;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
+using QuestPDF.Drawing;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Png;
 using QuizForge.Models.Interfaces;
 using QuizForge.Infrastructure.Parsers;
 using QuizForge.Infrastructure.Renderers;
@@ -17,7 +20,7 @@ namespace QuizForge.Infrastructure.Engines;
 /// </summary>
 public class NativePdfEngine : IPdfEngine
 {
-    private readonly ILogger<NativePdfEngine> _logger;
+    private readonly ILogger<PdfEngine> _logger;
     private readonly LatexParser _latexParser;
     private readonly MathRenderer _mathRenderer;
     private readonly PdfErrorReportingService _errorReportingService;
@@ -34,7 +37,7 @@ public class NativePdfEngine : IPdfEngine
     /// <param name="errorReportingService">错误报告服务</param>
     /// <param name="cacheService">PDF缓存服务</param>
     /// <param name="configuration">配置</param>
-    public NativePdfEngine(ILogger<NativePdfEngine> logger, LatexParser latexParser, MathRenderer mathRenderer,
+    public NativePdfEngine(ILogger<PdfEngine> logger, LatexParser latexParser, MathRenderer mathRenderer,
         PdfErrorReportingService errorReportingService, PdfCacheService cacheService, IConfiguration configuration)
     {
         _logger = logger;
@@ -44,7 +47,7 @@ public class NativePdfEngine : IPdfEngine
         _cacheService = cacheService;
         
         // 从配置中获取是否启用缓存
-        _enableCache = configuration.GetValue<bool>("PdfEngine:EnableCache") ?? true;
+        _enableCache = bool.Parse(configuration.GetSection("PdfEngine:EnableCache").Value ?? "true");
         
         // 设置临时目录
         _tempDirectory = Path.Combine(Path.GetTempPath(), "QuizForge", "PDF");
@@ -113,7 +116,8 @@ public class NativePdfEngine : IPdfEngine
             {
                 try
                 {
-                    QuestPDF.Helpers.FontManager.RegisterFont(fontPath);
+                    using var fontStream = File.OpenRead(fontPath);
+                    QuestPDF.Drawing.FontManager.RegisterFont(fontStream);
                     _logger.LogDebug("成功注册字体: {FontPath}", fontPath);
                 }
                 catch (Exception ex)
@@ -129,25 +133,19 @@ public class NativePdfEngine : IPdfEngine
             }
             
             // 设置默认字体
+            string defaultFont = "Arial";
             if (fontPaths.Any(p => p.Contains("msyh.ttc")))
             {
-                QuestPDF.Helpers.FontManager.RegisterFont("Microsoft YaHei", @"C:\Windows\Fonts\msyh.ttc");
-                QuestPDF.Helpers.FontManager.RegisterFont("Microsoft YaHei Bold", @"C:\Windows\Fonts\msyhbd.ttc");
-                QuestPDF.Helpers.FontManager.RegisterFont("Microsoft YaHei Light", @"C:\Windows\Fonts\msyhl.ttc");
+                defaultFont = "Microsoft YaHei";
             }
             else if (fontPaths.Any(p => p.Contains("simsun.ttc")))
             {
-                QuestPDF.Helpers.FontManager.RegisterFont("SimSun", @"C:\Windows\Fonts\simsun.ttc");
+                defaultFont = "SimSun";
             }
             else if (fontPaths.Any(p => p.Contains("simhei.ttf")))
             {
-                QuestPDF.Helpers.FontManager.RegisterFont("SimHei", @"C:\Windows\Fonts\simhei.ttf");
+                defaultFont = "SimHei";
             }
-            
-            // 设置字体家族
-            QuestPDF.Helpers.FontManager.RegisterFontFamily("ChineseFont",
-                fontPaths.Any(p => p.Contains("msyh.ttc")) ? "Microsoft YaHei" :
-                fontPaths.Any(p => p.Contains("simsun.ttc")) ? "SimSun" : "SimHei");
             
             _logger.LogInformation("字体配置完成，共注册 {Count} 个字体", fontPaths.Count);
         }
@@ -225,7 +223,7 @@ public class NativePdfEngine : IPdfEngine
                 {
                     page.Size(PageSizes.A4);
                     page.Margin(2, Unit.Centimetre);
-                    page.DefaultTextStyle(x => x.FontSize(12).FontFamily("ChineseFont"));
+                    page.DefaultTextStyle(x => x.FontSize(12).FontFamily("Arial"));
                     
                     page.Header().Element(ComposeHeader);
                     page.Content().Element(c => ComposeContent(c, content));
@@ -349,7 +347,7 @@ public class NativePdfEngine : IPdfEngine
                 {
                     page.Size(PageSizes.A4);
                     page.Margin(2, Unit.Centimetre);
-                    page.DefaultTextStyle(x => x.FontSize(12).FontFamily("ChineseFont"));
+                    page.DefaultTextStyle(x => x.FontSize(12).FontFamily("Arial"));
                     
                     page.Header().Element(ComposeHeader);
                     page.Content().Element(c => ComposeLatexContent(c, document));
@@ -462,7 +460,7 @@ public class NativePdfEngine : IPdfEngine
             
             // 将图像转换为字节数组
             using var outputStream = new MemoryStream();
-            sharpImage.SaveAsPngAsync(outputStream).Wait();
+            sharpImage.Save(outputStream, new PngEncoder());
             
             _logger.LogInformation("PDF预览图像生成成功: {PdfPath}", pdfPath);
             return outputStream.ToArray();
@@ -501,17 +499,17 @@ public class NativePdfEngine : IPdfEngine
             // 第一行：标题和日期
             column.Item().Row(row =>
             {
-                row.RelativeItem().Text("QuizForge").FontSize(16).Bold().FontFamily("ChineseFont").FontColor(Colors.Blue.Darken2);
-                row.ConstantItem(100).Height(25).AlignRight().AlignMiddle().Text(DateTime.Now.ToString("yyyy-MM-dd")).FontSize(10).FontFamily("ChineseFont");
+                row.RelativeItem().Text("QuizForge").FontSize(16).Bold().FontFamily("Arial").FontColor(Colors.Blue.Darken2);
+                row.ConstantItem(100).Height(25).AlignRight().AlignMiddle().Text(DateTime.Now.ToString("yyyy-MM-dd")).FontSize(10).FontFamily("Arial");
             });
             
             // 第二行：密封线
             column.Item().Row(row =>
             {
                 // 使用静态文本作为密封线标记
-                row.ConstantItem(80).Height(20).AlignLeft().AlignMiddle().Border(1).BorderColor(QuestPDF.Helpers.Colors.Red).Padding(2).Text("密封线 (左)").FontSize(10).FontFamily("ChineseFont").FontColor(QuestPDF.Helpers.Colors.Red);
+                row.ConstantItem(80).Height(20).AlignLeft().AlignMiddle().Border(1).BorderColor(QuestPDF.Helpers.Colors.Red.Lighten1).Padding(2).Text("密封线 (左)").FontSize(10).FontFamily("Arial").FontColor(QuestPDF.Helpers.Colors.Red.Lighten1);
                 row.RelativeItem();
-                row.ConstantItem(80).Height(20).AlignRight().AlignMiddle().Border(1).BorderColor(QuestPDF.Helpers.Colors.Red).Padding(2).Text("密封线 (右)").FontSize(10).FontFamily("ChineseFont").FontColor(QuestPDF.Helpers.Colors.Red);
+                row.ConstantItem(80).Height(20).AlignRight().AlignMiddle().Border(1).BorderColor(QuestPDF.Helpers.Colors.Red.Lighten1).Padding(2).Text("密封线 (右)").FontSize(10).FontFamily("Arial").FontColor(QuestPDF.Helpers.Colors.Red.Lighten1);
             });
             
             // 分隔线
@@ -525,19 +523,13 @@ public class NativePdfEngine : IPdfEngine
     /// <param name="container">容器</param>
     private void ComposeFooter(IContainer container)
     {
-        container.LineHorizontal(1).LineColor(Colors.Grey.Lighten2);
+        container.LineHorizontal(1).LineColor(QuestPDF.Helpers.Colors.Grey.Lighten2);
         
         container.Row(row =>
         {
-            row.RelativeItem().Text(x =>
-            {
-                x.Span("第 ");
-                x.CurrentPageNumber().Format("第 {0} 页");
-                x.Span(" 页，共 ");
-                x.TotalPages().Format("共 {0} 页");
-            }).FontSize(10).FontFamily("ChineseFont");
+            row.RelativeItem().Text("第 [Page] 页，共 [TotalPages] 页").FontSize(10).FontFamily("Arial");
             
-            row.ConstantItem(100).Height(25).AlignRight().AlignMiddle().Text("QuizForge").FontSize(10).FontFamily("ChineseFont");
+            row.ConstantItem(100).Height(25).AlignRight().AlignMiddle().Text("QuizForge").FontSize(10).FontFamily("Arial");
         });
     }
     
@@ -558,7 +550,7 @@ public class NativePdfEngine : IPdfEngine
                 var trimmedParagraph = paragraph.Trim();
                 if (!string.IsNullOrEmpty(trimmedParagraph))
                 {
-                    column.Item().Text(trimmedParagraph).FontSize(12).FontFamily("ChineseFont");
+                    column.Item().Text(trimmedParagraph).FontSize(12).FontFamily("Arial");
                     column.Item().PaddingVertical(5);
                 }
             }
@@ -614,13 +606,13 @@ public class NativePdfEngine : IPdfEngine
             switch (section.Level)
             {
                 case 1:
-                    column.Item().Text(section.Title).FontSize(18).Bold().FontFamily("ChineseFont").FontColor(Colors.Blue.Darken1);
+                    column.Item().Text(section.Title).FontSize(18).Bold().FontFamily("Arial").FontColor(Colors.Blue.Darken1);
                     break;
                 case 2:
-                    column.Item().Text(section.Title).FontSize(16).Bold().FontFamily("ChineseFont");
+                    column.Item().Text(section.Title).FontSize(16).Bold().FontFamily("Arial");
                     break;
                 case 3:
-                    column.Item().Text(section.Title).FontSize(14).Bold().FontFamily("ChineseFont");
+                    column.Item().Text(section.Title).FontSize(14).Bold().FontFamily("Arial");
                     break;
             }
         });

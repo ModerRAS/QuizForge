@@ -55,7 +55,7 @@ public class PdfEngine : IPdfEngine
         _errorReportingService = errorReportingService;
         
         // 从配置中获取是否使用原生引擎
-        _useNativeEngine = configuration.GetValue<bool>("PdfEngine:UseNativeEngine") ?? true;
+        _useNativeEngine = bool.Parse(configuration.GetSection("PdfEngine:UseNativeEngine").Value ?? "true");
         
         _tempDirectory = Path.Combine(Path.GetTempPath(), "QuizForge", "LaTeX");
         
@@ -68,7 +68,7 @@ public class PdfEngine : IPdfEngine
         // 尝试查找LaTeX可执行文件路径
         _latexExecutablePath = FindLatexExecutable();
         
-        // 创建PDF引擎
+        // 创建PDF引擎 - 使用相同的logger实例
         _nativePdfEngine = new NativePdfEngine(logger, latexParser, mathRenderer, errorReportingService, cacheService, configuration);
         _latexPdfEngine = new LatexPdfEngine(logger);
         

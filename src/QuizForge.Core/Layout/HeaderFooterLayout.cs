@@ -113,6 +113,153 @@ public class HeaderFooterLayout
     /// <summary>
     /// 生成页眉页脚设置
     /// </summary>
+    /// <param name="template">试卷模板</param>
+    /// <param name="headerConfig">抬头配置</param>
+    /// <returns>页眉页脚设置LaTeX代码</returns>
+    public string GenerateHeaderFooterSetup(ExamTemplate template, HeaderConfig headerConfig)
+    {
+        if (template == null)
+        {
+            throw new ArgumentNullException(nameof(template));
+        }
+
+        if (headerConfig == null)
+        {
+            throw new ArgumentNullException(nameof(headerConfig));
+        }
+
+        var setupBuilder = new StringBuilder();
+        
+        // 基本页眉页脚设置
+        setupBuilder.AppendLine("\\pagestyle{fancy}");
+        setupBuilder.AppendLine("\\fancyhf{}");
+        
+        // 根据HeaderConfig设置配置页眉页脚
+        if (headerConfig.ShowHeader)
+        {
+            setupBuilder.AppendLine("\\fancyhead[C]{}");
+        }
+        
+        if (headerConfig.ShowFooter)
+        {
+            setupBuilder.AppendLine("\\fancyfoot[C]{第\\thepage 页/共\\pageref{LastPage}页}");
+        }
+        
+        // 设置页眉线
+        setupBuilder.AppendLine("\\renewcommand{\\headrulewidth}{0.4pt}");
+        
+        // 设置页脚线
+        setupBuilder.AppendLine("\\renewcommand{\\footrulewidth}{0pt}");
+        
+        return setupBuilder.ToString();
+    }
+
+    /// <summary>
+    /// 生成页眉内容
+    /// </summary>
+    /// <param name="template">试卷模板</param>
+    /// <param name="headerConfig">抬头配置</param>
+    /// <returns>页眉内容的LaTeX代码</returns>
+    public string GenerateHeaderContent(ExamTemplate template, HeaderConfig headerConfig)
+    {
+        if (template == null)
+        {
+            throw new ArgumentNullException(nameof(template));
+        }
+
+        if (headerConfig == null)
+        {
+            throw new ArgumentNullException(nameof(headerConfig));
+        }
+
+        var headerBuilder = new StringBuilder();
+        
+        // 使用HeaderConfig生成页眉
+        if (!string.IsNullOrWhiteSpace(headerConfig.OddPageHeaderContent))
+        {
+            headerBuilder.AppendLine($"\\fancyhead[LO,RE]{{{EscapeLaTeX(ReplacePlaceholders(headerConfig.OddPageHeaderContent, headerConfig))}}}");
+        }
+        
+        if (!string.IsNullOrWhiteSpace(headerConfig.EvenPageHeaderContent))
+        {
+            headerBuilder.AppendLine($"\\fancyhead[LE,RO]{{{EscapeLaTeX(ReplacePlaceholders(headerConfig.EvenPageHeaderContent, headerConfig))}}}");
+        }
+        
+        // 默认页眉（考试标题）
+        if (string.IsNullOrWhiteSpace(headerConfig.OddPageHeaderContent) && string.IsNullOrWhiteSpace(headerConfig.EvenPageHeaderContent))
+        {
+            headerBuilder.AppendLine($"\\fancyhead[C]{{{EscapeLaTeX(headerConfig.ExamTitle)}}}");
+        }
+        
+        return headerBuilder.ToString();
+    }
+
+    /// <summary>
+    /// 生成页脚内容
+    /// </summary>
+    /// <param name="template">试卷模板</param>
+    /// <param name="headerConfig">抬头配置</param>
+    /// <returns>页脚内容的LaTeX代码</returns>
+    public string GenerateFooterContent(ExamTemplate template, HeaderConfig headerConfig)
+    {
+        if (template == null)
+        {
+            throw new ArgumentNullException(nameof(template));
+        }
+
+        if (headerConfig == null)
+        {
+            throw new ArgumentNullException(nameof(headerConfig));
+        }
+
+        var footerBuilder = new StringBuilder();
+        
+        // 使用HeaderConfig生成页脚
+        if (!string.IsNullOrWhiteSpace(headerConfig.OddPageFooterContent))
+        {
+            footerBuilder.AppendLine($"\\fancyfoot[LO,RE]{{{EscapeLaTeX(ReplacePlaceholders(headerConfig.OddPageFooterContent, headerConfig))}}}");
+        }
+        
+        if (!string.IsNullOrWhiteSpace(headerConfig.EvenPageFooterContent))
+        {
+            footerBuilder.AppendLine($"\\fancyfoot[LE,RO]{{{EscapeLaTeX(ReplacePlaceholders(headerConfig.EvenPageFooterContent, headerConfig))}}}");
+        }
+        
+        // 默认页脚显示页码
+        if (string.IsNullOrWhiteSpace(headerConfig.OddPageFooterContent) && string.IsNullOrWhiteSpace(headerConfig.EvenPageFooterContent))
+        {
+            footerBuilder.AppendLine("\\fancyfoot[C]{第\\thepage 页/共\\pageref{LastPage}页}");
+        }
+        
+        return footerBuilder.ToString();
+    }
+
+    /// <summary>
+    /// 替换占位符
+    /// </summary>
+    /// <param name="text">包含占位符的文本</param>
+    /// <param name="headerConfig">抬头配置</param>
+    /// <returns>替换后的文本</returns>
+    private string ReplacePlaceholders(string text, HeaderConfig headerConfig)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return string.Empty;
+        }
+
+        return text
+            .Replace("{EXAM_TITLE}", headerConfig.ExamTitle ?? "")
+            .Replace("{SUBJECT}", headerConfig.Subject ?? "")
+            .Replace("{EXAM_TIME}", headerConfig.ExamTime > 0 ? $"{headerConfig.ExamTime}分钟" : "")
+            .Replace("{EXAM_DATE}", headerConfig.ExamDate ?? "")
+            .Replace("{SCHOOL}", headerConfig.SchoolName ?? "")
+            .Replace("{CLASS}", headerConfig.Class ?? "")
+            .Replace("{TOTAL_POINTS}", headerConfig.TotalPoints > 0 ? $"{headerConfig.TotalPoints}分" : "");
+    }
+
+    /// <summary>
+    /// 生成页眉页脚设置
+    /// </summary>
     /// <returns>页眉页脚设置LaTeX代码</returns>
     public string GenerateHeaderFooterSetup()
     {

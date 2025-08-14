@@ -79,4 +79,29 @@ public class ExamPaperOptions
     /// 类别分布
     /// </summary>
     public Dictionary<string, int> CategoryDistribution { get; set; } = new();
+    
+    /// <summary>
+    /// 考试时间（分钟）
+    /// </summary>
+    public int ExamTime { get; set; } = 120;
+    
+    /// <summary>
+    /// 学校名称
+    /// </summary>
+    public string School { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// 班级名称
+    /// </summary>
+    public string Class { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// 教师姓名
+    /// </summary>
+    public string Teacher { get; set; } = string.Empty;
+    
+    /// <summary>
+    /// 考试日期
+    /// </summary>
+    public DateTime ExamDate { get; set; } = DateTime.Now;
 }

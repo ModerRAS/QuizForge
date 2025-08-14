@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using Avalonia.Data.Converters;
 using QuizForge.Models;
+using QuizForge.Models.Interfaces;
 
 namespace QuizForge.App.Converters
 {

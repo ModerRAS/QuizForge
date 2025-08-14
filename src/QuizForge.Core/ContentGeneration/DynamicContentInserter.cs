@@ -471,7 +471,7 @@ public class DynamicContentInserter
     /// <returns>页眉页脚设置的LaTeX代码</returns>
     private string GenerateHeaderFooterSetup()
     {
-        return @”
+        return @"
 % 页眉页脚设置
 \pagestyle{fancy}
 \fancyhf{}
@@ -591,5 +591,48 @@ public class DynamicContentInserter
             .Replace(">", "$>$");
 
         return escapedText;
+    }
+
+    /// <summary>
+    /// 生成抬头部分
+    /// </summary>
+    /// <param name="template">试卷模板</param>
+    /// <param name="questions">题目列表</param>
+    /// <returns>抬头部分的LaTeX代码</returns>
+    private string GenerateHeaderSection(ExamTemplate template, List<Question> questions)
+    {
+        // 如果有HeaderConfig，使用新的方法
+        if (template.HeaderConfig != null)
+        {
+            var totalPoints = questions.Sum(q => q.Points);
+            
+            // 确保HeaderConfig中的基本信息已设置
+            if (string.IsNullOrWhiteSpace(template.HeaderConfig.ExamTitle))
+            {
+                template.HeaderConfig.ExamTitle = template.Name;
+            }
+            
+            if (string.IsNullOrWhiteSpace(template.HeaderConfig.Subject))
+            {
+                template.HeaderConfig.Subject = template.Description;
+            }
+            
+            if (template.HeaderConfig.ExamTime == 0)
+            {
+                template.HeaderConfig.ExamTime = 120;
+            }
+            
+            if (template.HeaderConfig.TotalPoints == 0)
+            {
+                template.HeaderConfig.TotalPoints = totalPoints;
+            }
+            
+            return _headerLayout.GenerateHeader(template.HeaderConfig, 1);
+        }
+        else
+        {
+            // 使用向后兼容的方法
+            return EscapeLaTeX(template.HeaderContent);
+        }
     }
 }

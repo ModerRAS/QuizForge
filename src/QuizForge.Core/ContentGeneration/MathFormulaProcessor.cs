@@ -105,8 +105,8 @@ public class MathFormulaProcessor
         
         foreach (var env in mathEnvironments)
         {
-            var beginPattern = $@"\\begin\{{{env}\}";
-            var endPattern = $@"\\end\{{{env}\}";
+            var beginPattern = $@"\\begin\{{{env}}}";
+            var endPattern = $@"\\end\{{{env}}}";
             
             var beginCount = Regex.Matches(result, beginPattern).Count;
             var endCount = Regex.Matches(result, endPattern).Count;

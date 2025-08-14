@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using SixLabors.ImageSharp.Formats.Png;
 using QuizForge.Models.Interfaces;
 
 namespace QuizForge.Infrastructure.Engines;
@@ -12,7 +13,7 @@ namespace QuizForge.Infrastructure.Engines;
 /// </summary>
 public class LatexPdfEngine : IPdfEngine
 {
-    private readonly ILogger<LatexPdfEngine> _logger;
+    private readonly ILogger<PdfEngine> _logger;
     private readonly string _tempDirectory;
     private readonly string _latexExecutablePath;
 
@@ -20,7 +21,7 @@ public class LatexPdfEngine : IPdfEngine
     /// LaTeX PDF引擎构造函数
     /// </summary>
     /// <param name="logger">日志记录器</param>
-    public LatexPdfEngine(ILogger<LatexPdfEngine> logger)
+    public LatexPdfEngine(ILogger<PdfEngine> logger)
     {
         _logger = logger;
         
@@ -217,7 +218,7 @@ public class LatexPdfEngine : IPdfEngine
             
             // 将图像转换为字节数组
             using var outputStream = new MemoryStream();
-            sharpImage.SaveAsPngAsync(outputStream).Wait();
+            sharpImage.Save(outputStream, new PngEncoder());
             
             _logger.LogInformation("PDF预览图像生成成功: {PdfPath}", pdfPath);
             return outputStream.ToArray();

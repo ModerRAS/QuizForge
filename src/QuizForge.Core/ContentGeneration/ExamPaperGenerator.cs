@@ -15,19 +15,22 @@ public class ExamPaperGenerator
     private readonly ITemplateRepository _templateRepository;
     private readonly ContentGenerator _contentGenerator;
     private readonly DynamicContentInserter _dynamicContentInserter;
+    private readonly LaTeXTemplateProcessor _latexTemplateProcessor;
 
     public ExamPaperGenerator(
         IQuestionProcessor questionProcessor,
         IQuestionRepository questionRepository,
         ITemplateRepository templateRepository,
         ContentGenerator contentGenerator,
-        DynamicContentInserter dynamicContentInserter)
+        DynamicContentInserter dynamicContentInserter,
+        LaTeXTemplateProcessor latexTemplateProcessor)
     {
         _questionProcessor = questionProcessor ?? throw new ArgumentNullException(nameof(questionProcessor));
         _questionRepository = questionRepository ?? throw new ArgumentNullException(nameof(questionRepository));
         _templateRepository = templateRepository ?? throw new ArgumentNullException(nameof(templateRepository));
         _contentGenerator = contentGenerator ?? throw new ArgumentNullException(nameof(contentGenerator));
         _dynamicContentInserter = dynamicContentInserter ?? throw new ArgumentNullException(nameof(dynamicContentInserter));
+        _latexTemplateProcessor = latexTemplateProcessor ?? throw new ArgumentNullException(nameof(latexTemplateProcessor));
     }
 
     /// <summary>
@@ -82,7 +85,16 @@ public class ExamPaperGenerator
         OrganizeQuestionsToSections(template, selectedQuestions);
 
         // 生成试卷内容
-        var latexContent = await GenerateLaTeXContentAsync(template, selectedQuestions);
+        var headerConfig = new HeaderConfig
+        {
+            ExamTitle = options.Title,
+            Subject = questionBank.Name,
+            ExamTime = options.ExamTime,
+            SchoolName = options.School,
+            Class = options.Class,
+            ExamDate = options.ExamDate.ToString("yyyy-MM-dd")
+        };
+        var latexContent = await GenerateLaTeXContentAsync(template, selectedQuestions, headerConfig);
 
         // 创建试卷对象
         var examPaper = new ExamPaper
@@ -105,8 +117,9 @@ public class ExamPaperGenerator
     /// </summary>
     /// <param name="template">试卷模板</param>
     /// <param name="questions">题目列表</param>
+    /// <param name="headerConfig">抬头配置</param>
     /// <returns>LaTeX内容</returns>
-    public async Task<string> GenerateLaTeXContentAsync(ExamTemplate template, List<Question> questions)
+    public async Task<string> GenerateLaTeXContentAsync(ExamTemplate template, List<Question> questions, HeaderConfig headerConfig)
     {
         if (template == null)
         {
@@ -118,15 +131,22 @@ public class ExamPaperGenerator
             throw new ArgumentNullException(nameof(questions));
         }
 
-        // 获取模板文件内容
-        var templateContent = await GetTemplateContentAsync(template);
-        if (string.IsNullOrWhiteSpace(templateContent))
+        if (headerConfig == null)
         {
-            throw new InvalidOperationException("无法获取模板内容");
+            throw new ArgumentNullException(nameof(headerConfig));
         }
 
-        // 插入动态内容
-        var latexContent = _dynamicContentInserter.InsertDynamicContent(templateContent, template, questions);
+        // 创建临时题库对象
+        var questionBank = new QuestionBank
+        {
+            Id = Guid.NewGuid(),
+            Name = headerConfig.ExamTitle ?? "试卷",
+            Description = headerConfig.Subject ?? "考试科目",
+            Questions = questions
+        };
+
+        // 使用新的LaTeX模板处理器生成内容
+        var latexContent = _latexTemplateProcessor.ProcessTemplate(template, questionBank, headerConfig);
 
         return latexContent;
     }
@@ -222,7 +242,16 @@ public class ExamPaperGenerator
         OrganizeQuestionsToSections(template, questions);
 
         // 生成试卷内容
-        var latexContent = await GenerateLaTeXContentAsync(template, questions);
+        var headerConfig = new HeaderConfig
+        {
+            ExamTitle = options.Title,
+            Subject = "手动生成试卷",
+            ExamTime = options.ExamTime,
+            SchoolName = options.School,
+            Class = options.Class,
+            ExamDate = options.ExamDate.ToString("yyyy-MM-dd")
+        };
+        var latexContent = await GenerateLaTeXContentAsync(template, questions, headerConfig);
 
         // 创建试卷对象
         var examPaper = new ExamPaper

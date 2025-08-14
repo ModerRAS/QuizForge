@@ -11,10 +11,12 @@ using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.Fonts;
 using SixLabors.ImageSharp.Drawing.Processing;
+using SixLabors.ImageSharp.Drawing;
 using SixLabors.ImageSharp.Formats.Png;
 using System.Text.Json;
 using DrawingImage = System.Drawing.Image;
 using ImageSharpImage = SixLabors.ImageSharp.Image;
+using IOPath = System.IO.Path;
 
 namespace QuizForge.Infrastructure.Services;
 
@@ -39,12 +41,12 @@ public class PrintPreviewService : IPrintPreviewService
         _pdfEngine = pdfEngine;
         
         // 初始化配置文件路径
-        var appDataPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "QuizForge");
+        var appDataPath = IOPath.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "QuizForge");
         if (!Directory.Exists(appDataPath))
         {
             Directory.CreateDirectory(appDataPath);
         }
-        _configFilePath = Path.Combine(appDataPath, "preview-config.json");
+        _configFilePath = IOPath.Combine(appDataPath, "preview-config.json");
         
         // 加载预览配置
         _ = LoadPreviewConfigAsync();
@@ -329,7 +331,7 @@ public class PrintPreviewService : IPrintPreviewService
             {
                 ctx.DrawText(
                     textOptions,
-                    $"PDF预览: {Path.GetFileName(pdfPath)}\n" +
+                    $"PDF预览: {IOPath.GetFileName(pdfPath)}\n" +
                     $"页码: {pageNumber}/{document.PageCount}\n" +
                     $"尺寸: {page.Width}x{page.Height}",
                     SixLabors.ImageSharp.Color.Black);
@@ -815,7 +817,7 @@ public class PrintPreviewService : IPrintPreviewService
                 
                 // 绘制矩形框
                 ctx.DrawPolygon(
-                    new SixLabors.ImageSharp.Drawing.Processing.Pen(SixLabors.ImageSharp.Color.Red, 2),
+                    new SolidPen(SixLabors.ImageSharp.Color.Red, 2),
                     new SixLabors.ImageSharp.PointF(boxX, boxY),
                     new SixLabors.ImageSharp.PointF(boxX + boxWidth, boxY),
                     new SixLabors.ImageSharp.PointF(boxX + boxWidth, boxY + boxHeight),

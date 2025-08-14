@@ -47,11 +47,11 @@ public class PdfCacheService
         _configuration = configuration;
         
         // 从配置中获取缓存设置
-        _cacheDirectory = configuration.GetValue<string>("PdfEngine:CacheDirectory") ??
+        _cacheDirectory = configuration.GetSection("PdfEngine:CacheDirectory").Value ??
                           Path.Combine(Path.GetTempPath(), "QuizForge", "Cache");
-        _maxMemoryCacheSize = configuration.GetValue<int>("PdfEngine:MaxMemoryCacheSize") ?? 100;
-        _maxDiskCacheSize = configuration.GetValue<int>("PdfEngine:MaxDiskCacheSize") ?? 1000;
-        var cacheExpirationDays = configuration.GetValue<int>("PdfEngine:CacheExpirationDays") ?? 7;
+        _maxMemoryCacheSize = int.Parse(configuration.GetSection("PdfEngine:MaxMemoryCacheSize").Value ?? "100");
+        _maxDiskCacheSize = int.Parse(configuration.GetSection("PdfEngine:MaxDiskCacheSize").Value ?? "1000");
+        var cacheExpirationDays = int.Parse(configuration.GetSection("PdfEngine:CacheExpirationDays").Value ?? "7");
         _defaultCacheDuration = TimeSpan.FromDays(cacheExpirationDays);
         
         // 确保缓存目录存在

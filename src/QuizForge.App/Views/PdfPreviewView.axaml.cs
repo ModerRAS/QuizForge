@@ -3,6 +3,7 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
+using Avalonia;
 using QuizForge.App.ViewModels;
 
 namespace QuizForge.App.Views;

@@ -136,8 +136,43 @@ public class QuestionService : IQuestionService
     /// <returns>题目列表</returns>
     public async Task<List<Question>> GetRandomQuestionsAsync(int count, string? category = null, string? difficulty = null)
     {
-        // TODO: 实现随机获取题目的逻辑
-        await Task.CompletedTask;
-        return new List<Question>();
+        try
+        {
+            // 验证参数
+            if (count <= 0)
+            {
+                throw new ArgumentException("题目数量必须大于0", nameof(count));
+            }
+
+            // 获取所有题目
+            var allQuestions = await _questionRepository.GetAllQuestionsAsync();
+            
+            if (allQuestions.Count == 0)
+            {
+                return new List<Question>();
+            }
+
+            // 创建临时题库用于随机选择
+            // 简化实现：直接使用所有题目创建一个临时题库
+            var tempQuestionBank = new QuestionBank
+            {
+                Id = Guid.NewGuid(),
+                Name = "临时题库",
+                Description = "用于随机选择的临时题库",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                Questions = allQuestions
+            };
+
+            // 使用QuestionBankProcessor进行随机选择
+            var randomQuestions = _questionProcessor.GetRandomQuestions(count, tempQuestionBank, category, difficulty);
+            
+            return randomQuestions;
+        }
+        catch (Exception ex)
+        {
+            // 在实际应用中，这里应该记录日志
+            throw new Exception($"随机获取题目失败: {ex.Message}", ex);
+        }
     }
 }

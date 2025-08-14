@@ -61,4 +61,10 @@ public interface IQuestionRepository
     /// <param name="difficulty">难度</param>
     /// <returns>题目列表</returns>
     Task<List<Question>> GetQuestionsByDifficultyAsync(string difficulty);
+    
+    /// <summary>
+    /// 获取所有题目
+    /// </summary>
+    /// <returns>题目列表</returns>
+    Task<List<Question>> GetAllQuestionsAsync();
 }

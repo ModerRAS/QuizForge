@@ -312,19 +312,37 @@ namespace QuizForge.App.ViewModels
 
         try
         {
+            IsGenerating = true;
             Status = "正在导出试卷...";
             
-            // TODO: 实际的导出逻辑
-            // await _exportService.ExportToPdfAsync(GeneratedExamPaper);
+            // 创建导出配置
+            var exportConfig = new ExportConfiguration
+            {
+                OutputPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "QuizForge", "Generated"),
+                FileName = $"{GeneratedExamPaper.Title}_{DateTime.Now:yyyyMMddHHmmss}",
+                IncludeWatermark = false,
+                IncludeAnswerKey = false,
+                Copies = 1
+            };
             
-            // 模拟导出过程
-            await Task.Delay(1000);
+            // 生成LaTeX内容
+            var latexContent = await _generationService.GenerateLaTeXContentAsync(GeneratedExamPaper);
             
-            Status = $"试卷已导出到: C:\\QuizForge\\Generated\\{GeneratedExamPaper.Title}_{DateTime.Now:yyyyMMddHHmmss}.pdf";
+            // 导出为PDF
+            var pdfPath = await _exportService.ExportToPdfAsync(latexContent, exportConfig);
+            
+            Status = $"试卷已导出到: {pdfPath}";
+            
+            // 可选：打开导出的PDF文件
+            // System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(pdfPath) { UseShellExecute = true });
         }
         catch (Exception ex)
         {
             Status = $"导出失败: {ex.Message}";
+        }
+        finally
+        {
+            IsGenerating = false;
         }
     }
 
@@ -336,7 +354,7 @@ namespace QuizForge.App.ViewModels
     }
 
     [RelayCommand]
-    private void PreviewExam()
+    private async Task PreviewExamAsync()
     {
         if (GeneratedExamPaper == null)
         {
@@ -344,8 +362,35 @@ namespace QuizForge.App.ViewModels
             return;
         }
 
-        // TODO: 打开试卷预览窗口
-        Status = $"正在预览试卷: {GeneratedExamPaper.Title}";
+        try
+        {
+            IsGenerating = true;
+            Status = "正在生成预览...";
+            
+            // 生成LaTeX内容
+            var latexContent = await _generationService.GenerateLaTeXContentAsync(GeneratedExamPaper);
+            
+            // 生成预览
+            using var previewStream = await _generationService.GeneratePreviewAsync(latexContent);
+            
+            // 这里应该打开预览窗口，暂时保存到临时文件
+            var tempPreviewPath = Path.Combine(Path.GetTempPath(), $"QuizForge_Preview_{Guid.NewGuid()}.pdf");
+            using var fileStream = new FileStream(tempPreviewPath, FileMode.Create, FileAccess.Write);
+            await previewStream.CopyToAsync(fileStream);
+            
+            Status = $"预览已生成: {tempPreviewPath}";
+            
+            // 可选：打开预览文件
+            // System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(tempPreviewPath) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            Status = $"预览失败: {ex.Message}";
+        }
+        finally
+        {
+            IsGenerating = false;
+        }
     }
 }
 }
