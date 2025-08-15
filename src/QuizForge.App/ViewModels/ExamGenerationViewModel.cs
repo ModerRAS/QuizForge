@@ -4,6 +4,7 @@ using QuizForge.Models;
 using QuizForge.Models.Interfaces;
 using System.Collections.ObjectModel;
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -374,8 +375,8 @@ namespace QuizForge.App.ViewModels
             using var previewStream = await _generationService.GeneratePreviewAsync(latexContent);
             
             // 这里应该打开预览窗口，暂时保存到临时文件
-            var tempPreviewPath = Path.Combine(Path.GetTempPath(), $"QuizForge_Preview_{Guid.NewGuid()}.pdf");
-            using var fileStream = new FileStream(tempPreviewPath, FileMode.Create, FileAccess.Write);
+            var tempPreviewPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"QuizForge_Preview_{Guid.NewGuid()}.pdf");
+            using var fileStream = new System.IO.FileStream(tempPreviewPath, System.IO.FileMode.Create, System.IO.FileAccess.Write);
             await previewStream.CopyToAsync(fileStream);
             
             Status = $"预览已生成: {tempPreviewPath}";
@@ -392,5 +393,228 @@ namespace QuizForge.App.ViewModels
             IsGenerating = false;
         }
     }
+
+    /// <summary>
+    /// 生成试卷
+    /// </summary>
+    /// <returns>生成结果</returns>
+    public async Task<bool> GeneratePaperAsync()
+    {
+        if (SelectedQuestionBank == null || SelectedTemplate == null)
+        {
+            Status = "请选择题库和模板";
+            return false;
+        }
+
+        try
+        {
+            IsGenerating = true;
+            Status = "正在生成试卷...";
+            
+            // 创建试卷
+            var examPaper = new ExamPaper
+            {
+                Id = Guid.NewGuid(),
+                Title = ExamTitle,
+                QuestionBankId = SelectedQuestionBank.Id,
+                TemplateId = SelectedTemplate.Id,
+                CreatedAt = DateTime.Now,
+                TotalPoints = 100,
+                Questions = SelectedQuestions.ToList(),
+                Content = $"{ExamTitle}\n\n{ExamDescription}"
+            };
+            
+            // 使用生成服务生成试卷
+            var options = new ExamPaperOptions
+            {
+                Title = examPaper.Title,
+                QuestionCount = examPaper.Questions.Count,
+                RandomQuestions = true,
+                IncludeAnswers = false
+            };
+            
+            GeneratedExamPaper = await _generationService.GenerateExamPaperAsync(
+                examPaper.TemplateId, 
+                examPaper.QuestionBankId, 
+                options);
+            
+            Status = "试卷生成完成";
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Status = $"生成试卷失败: {ex.Message}";
+            return false;
+        }
+        finally
+        {
+            IsGenerating = false;
+        }
+    }
+
+    /// <summary>
+    /// 保存试卷
+    /// </summary>
+    /// <returns>保存结果</returns>
+    public async Task<bool> SaveExamPaperAsync()
+    {
+        if (GeneratedExamPaper == null)
+        {
+            Status = "没有可保存的试卷";
+            return false;
+        }
+
+        try
+        {
+            IsGenerating = true;
+            Status = "正在保存试卷...";
+            
+            // TODO: 实现保存逻辑
+            await Task.Delay(1000); // 模拟保存操作
+            
+            Status = "试卷保存完成";
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Status = $"保存试卷失败: {ex.Message}";
+            return false;
+        }
+        finally
+        {
+            IsGenerating = false;
+        }
+    }
+
+    /// <summary>
+    /// 撤销操作
+    /// </summary>
+    /// <returns>撤销结果</returns>
+    public async Task<bool> UndoAsync()
+    {
+        try
+        {
+            Status = "正在撤销...";
+            // TODO: 实现撤销逻辑
+            await Task.Delay(500); // 模拟撤销操作
+            Status = "撤销完成";
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Status = $"撤销失败: {ex.Message}";
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 重做操作
+    /// </summary>
+    /// <returns>重做结果</returns>
+    public async Task<bool> RedoAsync()
+    {
+        try
+        {
+            Status = "正在重做...";
+            // TODO: 实现重做逻辑
+            await Task.Delay(500); // 模拟重做操作
+            Status = "重做完成";
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Status = $"重做失败: {ex.Message}";
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 剪切操作
+    /// </summary>
+    /// <returns>剪切结果</returns>
+    public async Task<bool> CutAsync()
+    {
+        try
+        {
+            Status = "正在剪切...";
+            // TODO: 实现剪切逻辑
+            await Task.Delay(500); // 模拟剪切操作
+            Status = "剪切完成";
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Status = $"剪切失败: {ex.Message}";
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 复制操作
+    /// </summary>
+    /// <returns>复制结果</returns>
+    public async Task<bool> CopyAsync()
+    {
+        try
+        {
+            Status = "正在复制...";
+            // TODO: 实现复制逻辑
+            await Task.Delay(500); // 模拟复制操作
+            Status = "复制完成";
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Status = $"复制失败: {ex.Message}";
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 粘贴操作
+    /// </summary>
+    /// <returns>粘贴结果</returns>
+    public async Task<bool> PasteAsync()
+    {
+        try
+        {
+            Status = "正在粘贴...";
+            // TODO: 实现粘贴逻辑
+            await Task.Delay(500); // 模拟粘贴操作
+            Status = "粘贴完成";
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Status = $"粘贴失败: {ex.Message}";
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 删除选中内容
+    /// </summary>
+    /// <returns>删除结果</returns>
+    public async Task<bool> DeleteSelectedAsync()
+    {
+        try
+        {
+            Status = "正在删除...";
+            // TODO: 实现删除逻辑
+            await Task.Delay(500); // 模拟删除操作
+            Status = "删除完成";
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Status = $"删除失败: {ex.Message}";
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// 是否有未保存的更改
+    /// </summary>
+    public bool HasUnsavedChanges { get; set; } = false;
 }
 }

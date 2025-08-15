@@ -1,9 +1,13 @@
+using System.IO;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 using Moq;
 using QuizForge.Models;
 using QuizForge.Models.Interfaces;
 using QuizForge.Infrastructure.Engines;
 using QuizForge.Infrastructure.Services;
+using QuizForge.Infrastructure.Parsers;
+using QuizForge.Infrastructure.Renderers;
 using QuizForge.Infrastructure.FileSystems;
 using QuizForge.Services;
 using SixLabors.ImageSharp;
@@ -20,6 +24,10 @@ public class PdfGenerationTests : IDisposable
     private readonly Mock<ILogger<PrintPreviewService>> _mockPrintPreviewLogger;
     private readonly Mock<ILogger<ExportService>> _mockExportServiceLogger;
     private readonly Mock<ILogger<FileService>> _mockFileServiceLogger;
+    private readonly Mock<ILogger<LatexParser>> _mockLatexParserLogger;
+    private readonly Mock<ILogger<MathRenderer>> _mockMathRendererLogger;
+    private readonly Mock<ILogger<PdfErrorReportingService>> _mockErrorReportingLogger;
+    private readonly Mock<ILogger<PdfCacheService>> _mockCacheLogger;
     private readonly Mock<IPdfEngine> _mockPdfEngine;
     private readonly Mock<IPrintPreviewService> _mockPrintPreviewService;
     private readonly Mock<IFileService> _mockFileService;
@@ -27,7 +35,12 @@ public class PdfGenerationTests : IDisposable
     private readonly Mock<IQuestionService> _mockQuestionService;
     private readonly Mock<ITemplateService> _mockTemplateService;
     private readonly Mock<IGenerationService> _mockGenerationService;
+    private readonly Mock<IConfiguration> _mockConfiguration;
     private readonly string _testOutputDirectory;
+    private readonly LatexParser _latexParser;
+    private readonly MathRenderer _mathRenderer;
+    private readonly PdfErrorReportingService _errorReportingService;
+    private readonly PdfCacheService _cacheService;
 
     /// <summary>
     /// 构造函数
@@ -39,6 +52,10 @@ public class PdfGenerationTests : IDisposable
         _mockPrintPreviewLogger = new Mock<ILogger<PrintPreviewService>>();
         _mockExportServiceLogger = new Mock<ILogger<ExportService>>();
         _mockFileServiceLogger = new Mock<ILogger<FileService>>();
+        _mockLatexParserLogger = new Mock<ILogger<LatexParser>>();
+        _mockMathRendererLogger = new Mock<ILogger<MathRenderer>>();
+        _mockErrorReportingLogger = new Mock<ILogger<PdfErrorReportingService>>();
+        _mockCacheLogger = new Mock<ILogger<PdfCacheService>>();
         _mockPdfEngine = new Mock<IPdfEngine>();
         _mockPrintPreviewService = new Mock<IPrintPreviewService>();
         _mockFileService = new Mock<IFileService>();
@@ -46,6 +63,7 @@ public class PdfGenerationTests : IDisposable
         _mockQuestionService = new Mock<IQuestionService>();
         _mockTemplateService = new Mock<ITemplateService>();
         _mockGenerationService = new Mock<IGenerationService>();
+        _mockConfiguration = new Mock<IConfiguration>();
 
         // 设置测试输出目录
         _testOutputDirectory = Path.Combine(Path.GetTempPath(), "QuizForge", "Tests");
@@ -55,6 +73,17 @@ public class PdfGenerationTests : IDisposable
         {
             Directory.CreateDirectory(_testOutputDirectory);
         }
+
+        // 创建依赖服务
+        _latexParser = new LatexParser(_mockLatexParserLogger.Object);
+        _mathRenderer = new MathRenderer(_mockMathRendererLogger.Object);
+        _errorReportingService = new PdfErrorReportingService(_mockErrorReportingLogger.Object);
+        _cacheService = new PdfCacheService(_mockCacheLogger.Object, _mockConfiguration.Object);
+        
+        // 配置mock
+        _mockConfiguration.Setup(c => c.GetSection("PdfEngine:EnableCache").Value).Returns("true");
+        _mockConfiguration.Setup(c => c.GetSection("PdfEngine:TempDirectory").Value).Returns(_testOutputDirectory);
+        _mockConfiguration.Setup(c => c.GetSection("PdfEngine:UseNativeEngine").Value).Returns("true");
     }
 
     /// <summary>
@@ -64,7 +93,7 @@ public class PdfGenerationTests : IDisposable
     public async Task PdfEngine_GeneratePdfAsync_ShouldReturnTrue()
     {
         // Arrange
-        var pdfEngine = new PdfEngine(_mockPdfEngineLogger.Object);
+        var pdfEngine = new PdfEngine(_mockPdfEngineLogger.Object, _mockConfiguration.Object, _latexParser, _mathRenderer, _errorReportingService, _cacheService);
         var content = "\\documentclass{article}\\begin{document}Hello World\\end{document}";
         var outputPath = Path.Combine(_testOutputDirectory, $"{Guid.NewGuid()}.pdf");
 
@@ -83,7 +112,7 @@ public class PdfGenerationTests : IDisposable
     public async Task PdfEngine_GenerateFromLatexAsync_ShouldReturnTrue()
     {
         // Arrange
-        var pdfEngine = new PdfEngine(_mockPdfEngineLogger.Object);
+        var pdfEngine = new PdfEngine(_mockPdfEngineLogger.Object, _mockConfiguration.Object, _latexParser, _mathRenderer, _errorReportingService, _cacheService);
         var latexContent = "\\documentclass{article}\\begin{document}Hello World\\end{document}";
         var outputPath = Path.Combine(_testOutputDirectory, $"{Guid.NewGuid()}.pdf");
 
@@ -102,7 +131,7 @@ public class PdfGenerationTests : IDisposable
     public async Task PdfEngine_GeneratePreviewAsync_ShouldReturnImageData()
     {
         // Arrange
-        var pdfEngine = new PdfEngine(_mockPdfEngineLogger.Object);
+        var pdfEngine = new PdfEngine(_mockPdfEngineLogger.Object, _mockConfiguration.Object, _latexParser, _mathRenderer, _errorReportingService, _cacheService);
         var content = "\\documentclass{article}\\begin{document}Hello World\\end{document}";
         var pdfPath = Path.Combine(_testOutputDirectory, $"{Guid.NewGuid()}.pdf");
         
@@ -361,10 +390,10 @@ public class PdfGenerationTests : IDisposable
         var printPreviewService = new PrintPreviewService(_mockPrintPreviewLogger.Object, _mockPdfEngine.Object);
         var expectedConfig = new PreviewConfig
         {
-            PreviewQuality = PreviewQuality.High,
+            DefaultQuality = 90,
             DisplayMode = PreviewDisplayMode.SinglePage,
             ShowSealLine = true,
-            ZoomLevel = 1.5
+            DefaultZoomLevel = 1.5
         };
 
         // Act
@@ -372,10 +401,10 @@ public class PdfGenerationTests : IDisposable
 
         // Assert
         Assert.NotNull(result);
-        Assert.Equal(expectedConfig.PreviewQuality, result.PreviewQuality);
+        Assert.Equal(expectedConfig.DefaultQuality, result.DefaultQuality);
         Assert.Equal(expectedConfig.DisplayMode, result.DisplayMode);
         Assert.Equal(expectedConfig.ShowSealLine, result.ShowSealLine);
-        Assert.Equal(expectedConfig.ZoomLevel, result.ZoomLevel);
+        Assert.Equal(expectedConfig.DefaultZoomLevel, result.DefaultZoomLevel);
     }
 
     /// <summary>
@@ -388,10 +417,10 @@ public class PdfGenerationTests : IDisposable
         var printPreviewService = new PrintPreviewService(_mockPrintPreviewLogger.Object, _mockPdfEngine.Object);
         var config = new PreviewConfig
         {
-            PreviewQuality = PreviewQuality.High,
+            DefaultQuality = 90,
             DisplayMode = PreviewDisplayMode.SinglePage,
             ShowSealLine = true,
-            ZoomLevel = 1.5
+            DefaultZoomLevel = 1.5
         };
 
         // Act
@@ -400,10 +429,10 @@ public class PdfGenerationTests : IDisposable
         // Assert
         var result = await printPreviewService.GetPreviewConfigAsync();
         Assert.NotNull(result);
-        Assert.Equal(config.PreviewQuality, result.PreviewQuality);
+        Assert.Equal(config.DefaultQuality, result.DefaultQuality);
         Assert.Equal(config.DisplayMode, result.DisplayMode);
         Assert.Equal(config.ShowSealLine, result.ShowSealLine);
-        Assert.Equal(config.ZoomLevel, result.ZoomLevel);
+        Assert.Equal(config.DefaultZoomLevel, result.DefaultZoomLevel);
     }
 
     /// <summary>
@@ -418,7 +447,7 @@ public class PdfGenerationTests : IDisposable
         var cropArea = new Rectangle(10, 10, 100, 100);
 
         // Act
-        var result = await printPreviewService.CropPreviewImageAsync(originalImageData, cropArea);
+        var result = await printPreviewService.CropPreviewImageAsync(originalImageData, cropArea.X, cropArea.Y, cropArea.Width, cropArea.Height);
 
         // Assert
         Assert.NotNull(result);
@@ -434,7 +463,7 @@ public class PdfGenerationTests : IDisposable
         // Arrange
         var printPreviewService = new PrintPreviewService(_mockPrintPreviewLogger.Object, _mockPdfEngine.Object);
         var originalImageData = new byte[] { 1, 2, 3, 4, 5 }; // 模拟图像数据
-        var brightness = 1.5;
+        var brightness = 50; // 转换为int类型
 
         // Act
         var result = await printPreviewService.AdjustBrightnessAsync(originalImageData, brightness);
@@ -453,7 +482,7 @@ public class PdfGenerationTests : IDisposable
         // Arrange
         var printPreviewService = new PrintPreviewService(_mockPrintPreviewLogger.Object, _mockPdfEngine.Object);
         var originalImageData = new byte[] { 1, 2, 3, 4, 5 }; // 模拟图像数据
-        var contrast = 1.5;
+        var contrast = 50; // 转换为int类型
 
         // Act
         var result = await printPreviewService.AdjustContrastAsync(originalImageData, contrast);

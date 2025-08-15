@@ -191,7 +191,7 @@ namespace QuizForge.App.ViewModels
         try
         {
             // 获取顶层窗口用于文件对话框
-            var topLevel = TopLevel.GetTopLevel(Avalonia.Application.Current?.ApplicationLifetime?.GetMainWindow());
+            var topLevel = TopLevel.GetTopLevel((Avalonia.Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.MainWindow);
             if (topLevel == null)
             {
                 Status = "无法获取窗口句柄";
@@ -286,11 +286,13 @@ namespace QuizForge.App.ViewModels
             
             if (format == QuestionBankFormat.Markdown)
             {
-                questions = await _markdownParser.ParseAsync(filePath);
+                var parsedQuestionBank = await _markdownParser.ParseAsync(filePath);
+                questions = parsedQuestionBank.Questions;
             }
             else if (format == QuestionBankFormat.Excel)
             {
-                questions = await _excelParser.ParseAsync(filePath);
+                var parsedQuestionBank = await _excelParser.ParseAsync(filePath);
+                questions = parsedQuestionBank.Questions;
             }
             // TODO: 添加JSON和XML解析器的支持
             // else if (format == QuestionBankFormat.Json)
@@ -618,7 +620,7 @@ namespace QuizForge.App.ViewModels
     {
         if (SelectedQuestion != null)
         {
-            var clipboard = TopLevel.GetTopLevel(Avalonia.Application.Current?.ApplicationLifetime?.GetMainWindow())?.Clipboard;
+            var clipboard = TopLevel.GetTopLevel((Avalonia.Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.MainWindow)?.Clipboard;
             if (clipboard != null)
             {
                 await clipboard.SetTextAsync(SelectedQuestion.Content);
@@ -631,7 +633,7 @@ namespace QuizForge.App.ViewModels
     {
         if (SelectedQuestion != null)
         {
-            var clipboard = TopLevel.GetTopLevel(Avalonia.Application.Current?.ApplicationLifetime?.GetMainWindow())?.Clipboard;
+            var clipboard = TopLevel.GetTopLevel((Avalonia.Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.MainWindow)?.Clipboard;
             if (clipboard != null)
             {
                 await clipboard.SetTextAsync(SelectedQuestion.Content);
@@ -642,7 +644,7 @@ namespace QuizForge.App.ViewModels
 
     public async Task PasteAsync()
     {
-        var clipboard = TopLevel.GetTopLevel(Avalonia.Application.Current?.ApplicationLifetime?.GetMainWindow())?.Clipboard;
+        var clipboard = TopLevel.GetTopLevel((Avalonia.Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.MainWindow)?.Clipboard;
         if (clipboard != null)
         {
             var text = await clipboard.GetTextAsync();

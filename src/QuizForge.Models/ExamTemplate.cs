@@ -26,6 +26,31 @@ public class ExamTemplate
     public PaperSize PaperSize { get; set; } = PaperSize.A4;
     
     /// <summary>
+    /// 页面方向
+    /// </summary>
+    public string Orientation { get; set; } = "纵向";
+    
+    /// <summary>
+    /// 上边距（厘米）
+    /// </summary>
+    public double MarginTop { get; set; } = 2.5;
+    
+    /// <summary>
+    /// 下边距（厘米）
+    /// </summary>
+    public double MarginBottom { get; set; } = 2.5;
+    
+    /// <summary>
+    /// 左边距（厘米）
+    /// </summary>
+    public double MarginLeft { get; set; } = 2.5;
+    
+    /// <summary>
+    /// 右边距（厘米）
+    /// </summary>
+    public double MarginRight { get; set; } = 2.5;
+    
+    /// <summary>
     /// 模板样式
     /// </summary>
     public TemplateStyle Style { get; set; } = TemplateStyle.Basic;
@@ -89,7 +114,33 @@ public enum PaperSize
     /// <summary>
     /// A3纸张
     /// </summary>
-    A3
+    A3,
+    
+    /// <summary>
+    /// B4纸张
+    /// </summary>
+    B4,
+    
+    /// <summary>
+    /// B5纸张
+    /// </summary>
+    B5
+}
+
+/// <summary>
+/// 页面方向枚举
+/// </summary>
+public enum PageOrientation
+{
+    /// <summary>
+    /// 横向
+    /// </summary>
+    Landscape,
+    
+    /// <summary>
+    /// 纵向
+    /// </summary>
+    Portrait
 }
 
 /// <summary>

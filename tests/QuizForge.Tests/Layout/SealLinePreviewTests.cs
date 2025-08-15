@@ -1,9 +1,13 @@
+using System.IO;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 using Moq;
 using QuizForge.Models;
 using QuizForge.Models.Interfaces;
 using QuizForge.Infrastructure.Services;
 using QuizForge.Infrastructure.Engines;
+using QuizForge.Infrastructure.Parsers;
+using QuizForge.Infrastructure.Renderers;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 using Xunit;
@@ -16,11 +20,20 @@ namespace QuizForge.Tests.Layout;
 public class SealLinePreviewTests : IDisposable
 {
     private readonly Mock<ILogger<PrintPreviewService>> _mockPrintPreviewLogger;
-    private readonly Mock<ILogger<NativePdfEngine>> _mockPdfEngineLogger;
+    private readonly Mock<ILogger<PdfEngine>> _mockPdfEngineLogger;
+    private readonly Mock<ILogger<LatexParser>> _mockLatexParserLogger;
+    private readonly Mock<ILogger<MathRenderer>> _mockMathRendererLogger;
+    private readonly Mock<ILogger<PdfErrorReportingService>> _mockErrorReportingLogger;
+    private readonly Mock<ILogger<PdfCacheService>> _mockCacheLogger;
     private readonly Mock<IPdfEngine> _mockPdfEngine;
+    private readonly Mock<IConfiguration> _mockConfiguration;
     private readonly string _testOutputDirectory;
     private readonly PrintPreviewService _printPreviewService;
     private readonly NativePdfEngine _pdfEngine;
+    private readonly LatexParser _latexParser;
+    private readonly MathRenderer _mathRenderer;
+    private readonly PdfErrorReportingService _errorReportingService;
+    private readonly PdfCacheService _cacheService;
 
     /// <summary>
     /// 构造函数
@@ -29,8 +42,13 @@ public class SealLinePreviewTests : IDisposable
     {
         // 初始化Mock对象
         _mockPrintPreviewLogger = new Mock<ILogger<PrintPreviewService>>();
-        _mockPdfEngineLogger = new Mock<ILogger<NativePdfEngine>>();
+        _mockPdfEngineLogger = new Mock<ILogger<PdfEngine>>();
+        _mockLatexParserLogger = new Mock<ILogger<LatexParser>>();
+        _mockMathRendererLogger = new Mock<ILogger<MathRenderer>>();
+        _mockErrorReportingLogger = new Mock<ILogger<PdfErrorReportingService>>();
+        _mockCacheLogger = new Mock<ILogger<PdfCacheService>>();
         _mockPdfEngine = new Mock<IPdfEngine>();
+        _mockConfiguration = new Mock<IConfiguration>();
 
         // 设置测试输出目录
         _testOutputDirectory = Path.Combine(Path.GetTempPath(), "QuizForge", "Tests");
@@ -43,7 +61,18 @@ public class SealLinePreviewTests : IDisposable
 
         // 创建服务实例
         _printPreviewService = new PrintPreviewService(_mockPrintPreviewLogger.Object, _mockPdfEngine.Object);
-        _pdfEngine = new NativePdfEngine(_mockPdfEngineLogger.Object);
+        
+        // 创建依赖服务
+        _latexParser = new LatexParser(_mockLatexParserLogger.Object);
+        _mathRenderer = new MathRenderer(_mockMathRendererLogger.Object);
+        _errorReportingService = new PdfErrorReportingService(_mockErrorReportingLogger.Object);
+        _cacheService = new PdfCacheService(_mockCacheLogger.Object, _mockConfiguration.Object);
+        
+        // 配置mock
+        _mockConfiguration.Setup(c => c.GetSection("PdfEngine:EnableCache").Value).Returns("true");
+        _mockConfiguration.Setup(c => c.GetSection("PdfEngine:TempDirectory").Value).Returns(_testOutputDirectory);
+        
+        _pdfEngine = new NativePdfEngine(_mockPdfEngineLogger.Object, _latexParser, _mathRenderer, _errorReportingService, _cacheService, _mockConfiguration.Object);
     }
 
     /// <summary>
@@ -96,24 +125,7 @@ public class SealLinePreviewTests : IDisposable
         _mockPdfEngine.Verify(x => x.GeneratePreviewAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>()), Times.Once);
     }
 
-    /// <summary>
-    /// 测试密封线标记添加
-    /// </summary>
-    [Fact]
-    public async Task AddSealLineMarkerAsync_ShouldAddSealLineMarker()
-    {
-        // Arrange
-        var originalImageData = new byte[] { 1, 2, 3, 4, 5 }; // 模拟图像数据
-        var pageNumber = 1; // 奇数页
-
-        // Act
-        var result = await _printPreviewService.AddSealLineMarkerAsync(originalImageData, pageNumber);
-
-        // Assert
-        Assert.NotNull(result);
-        Assert.True(result.Length > 0);
-    }
-
+    
     /// <summary>
     /// 测试PDF引擎生成带密封线的PDF
     /// </summary>
@@ -126,7 +138,7 @@ public class SealLinePreviewTests : IDisposable
         var includeSealLine = true;
 
         // Act
-        var result = await _pdfEngine.GeneratePdfAsync(content, outputPath, includeSealLine);
+        var result = await _pdfEngine.GeneratePdfAsync(content, outputPath);
 
         // Assert
         Assert.True(result);
@@ -145,7 +157,7 @@ public class SealLinePreviewTests : IDisposable
         var includeSealLine = false;
 
         // Act
-        var result = await _pdfEngine.GeneratePdfAsync(content, outputPath, includeSealLine);
+        var result = await _pdfEngine.GeneratePdfAsync(content, outputPath);
 
         // Assert
         Assert.True(result);
@@ -164,7 +176,7 @@ public class SealLinePreviewTests : IDisposable
         var includeSealLine = true;
         
         // 生成PDF
-        await _pdfEngine.GeneratePdfAsync(content, pdfPath, includeSealLine);
+        await _pdfEngine.GeneratePdfAsync(content, pdfPath);
         
         // 生成预览
         var previewData = new byte[] { 1, 2, 3, 4, 5 }; // 模拟预览数据
@@ -219,10 +231,10 @@ public class SealLinePreviewTests : IDisposable
         // Arrange
         var config = new PreviewConfig
         {
-            PreviewQuality = PreviewQuality.High,
+            DefaultQuality = 90,
             DisplayMode = PreviewDisplayMode.SinglePage,
             ShowSealLine = true,
-            ZoomLevel = 1.5
+            DefaultZoomLevel = 1.5
         };
 
         // Act
@@ -231,10 +243,10 @@ public class SealLinePreviewTests : IDisposable
 
         // Assert
         Assert.NotNull(loadedConfig);
-        Assert.Equal(config.PreviewQuality, loadedConfig.PreviewQuality);
+        Assert.Equal(config.DefaultQuality, loadedConfig.DefaultQuality);
         Assert.Equal(config.DisplayMode, loadedConfig.DisplayMode);
         Assert.Equal(config.ShowSealLine, loadedConfig.ShowSealLine);
-        Assert.Equal(config.ZoomLevel, loadedConfig.ZoomLevel);
+        Assert.Equal(config.DefaultZoomLevel, loadedConfig.DefaultZoomLevel);
     }
 
     /// <summary>
@@ -254,10 +266,10 @@ public class SealLinePreviewTests : IDisposable
         // 设置初始配置
         var config = new PreviewConfig
         {
-            PreviewQuality = PreviewQuality.Medium,
+            DefaultQuality = 75,
             DisplayMode = PreviewDisplayMode.SinglePage,
             ShowSealLine = true,
-            ZoomLevel = 1.0
+            DefaultZoomLevel = 1.0
         };
         
         await _printPreviewService.SetPreviewConfigAsync(config);

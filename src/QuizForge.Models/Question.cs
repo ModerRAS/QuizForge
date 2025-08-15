@@ -49,4 +49,19 @@ public class Question
     /// 分值
     /// </summary>
     public decimal Points { get; set; }
+    
+    /// <summary>
+    /// 题库ID
+    /// </summary>
+    public Guid QuestionBankId { get; set; }
+    
+    /// <summary>
+    /// 创建时间
+    /// </summary>
+    public DateTime CreatedAt { get; set; }
+    
+    /// <summary>
+    /// 更新时间
+    /// </summary>
+    public DateTime UpdatedAt { get; set; }
 }

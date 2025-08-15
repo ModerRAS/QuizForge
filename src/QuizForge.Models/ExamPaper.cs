@@ -44,4 +44,9 @@ public class ExamPaper
     /// 题目列表
     /// </summary>
     public List<Question> Questions { get; set; } = new();
+    
+    /// <summary>
+    /// 页面列表
+    /// </summary>
+    public List<ExamPage> Pages { get; set; } = new();
 }

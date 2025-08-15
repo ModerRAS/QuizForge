@@ -34,4 +34,14 @@ public class QuestionBank
     /// 题目列表
     /// </summary>
     public List<Question> Questions { get; set; } = new();
+    
+    /// <summary>
+    /// 题库格式
+    /// </summary>
+    public QuestionBankFormat Format { get; set; }
+    
+    /// <summary>
+    /// 文件路径
+    /// </summary>
+    public string? FilePath { get; set; }
 }

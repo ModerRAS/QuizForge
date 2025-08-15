@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 namespace QuizForge.Models.Interfaces;
 
 /// <summary>
@@ -80,4 +81,10 @@ public interface IFileService
     /// <param name="filePath">文件路径</param>
     /// <param name="settings">打印设置</param>
     Task<bool> PrintDocumentAsync(string filePath, PrintSettings settings);
+    
+    /// <summary>
+    /// 获取可用打印机列表
+    /// </summary>
+    /// <returns>打印机名称列表</returns>
+    Task<List<string>> GetAvailablePrintersAsync();
 }

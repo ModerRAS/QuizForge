@@ -4,6 +4,7 @@ using QuizForge.App.ViewModels;
 using QuizForge.App.Views;
 using QuizForge.Models;
 using QuizForge.Models.Interfaces;
+using QuizForge.Services;
 using Xunit;
 
 namespace QuizForge.Tests.Views;
@@ -13,9 +14,8 @@ namespace QuizForge.Tests.Views;
 /// </summary>
 public class PdfPreviewViewTests : IDisposable
 {
-    private readonly Mock<ILogger<PdfPreviewViewModel>> _mockLogger;
+    private readonly Mock<IExportService> _mockExportService;
     private readonly Mock<IPrintPreviewService> _mockPrintPreviewService;
-    private readonly Mock<IExamPaperService> _mockExamPaperService;
     private readonly string _testOutputDirectory;
     private readonly PdfPreviewViewModel _viewModel;
 
@@ -25,9 +25,8 @@ public class PdfPreviewViewTests : IDisposable
     public PdfPreviewViewTests()
     {
         // 初始化Mock对象
-        _mockLogger = new Mock<ILogger<PdfPreviewViewModel>>();
+        _mockExportService = new Mock<IExportService>();
         _mockPrintPreviewService = new Mock<IPrintPreviewService>();
-        _mockExamPaperService = new Mock<IExamPaperService>();
 
         // 设置测试输出目录
         _testOutputDirectory = Path.Combine(Path.GetTempPath(), "QuizForge", "Tests");
@@ -40,9 +39,8 @@ public class PdfPreviewViewTests : IDisposable
 
         // 创建视图模型实例
         _viewModel = new PdfPreviewViewModel(
-            _mockLogger.Object,
-            _mockPrintPreviewService.Object,
-            _mockExamPaperService.Object);
+            _mockExportService.Object,
+            _mockPrintPreviewService.Object);
     }
 
     /// <summary>
@@ -63,151 +61,33 @@ public class PdfPreviewViewTests : IDisposable
     }
 
     /// <summary>
-    /// 测试预览图像鼠标滚轮事件
+    /// 测试鼠标滚轮缩放功能
     /// </summary>
     [Fact]
-    public void PreviewImage_PointerWheel_ShouldUpdateZoomLevel()
+    public void HandleMouseWheel_ShouldUpdateZoomLevel()
     {
         // Arrange
-        var view = new PdfPreviewView
-        {
-            DataContext = _viewModel
-        };
-        
         var initialZoomLevel = _viewModel.ZoomLevel;
         
-        // 模拟鼠标滚轮事件
-        var args = new Avalonia.Input.PointerWheelEventArgs
-        {
-            Delta = 120.0, // 向上滚动
-            KeyModifiers = Avalonia.Input.KeyModifiers.Control
-        };
-
         // Act
-        view.PreviewImage_PointerWheel(view, args);
+        _viewModel.HandleMouseWheel(120); // 向上滚动
 
         // Assert
         Assert.True(_viewModel.ZoomLevel > initialZoomLevel);
     }
 
     /// <summary>
-    /// 测试预览图像鼠标按下事件
+    /// 测试缩略图点击功能
     /// </summary>
     [Fact]
-    public void PreviewImage_PointerPressed_ShouldStartDragging()
+    public void HandleThumbnailClick_ShouldUpdateCurrentPage()
     {
         // Arrange
-        var view = new PdfPreviewView
-        {
-            DataContext = _viewModel
-        };
-        
-        // 模拟鼠标按下事件
-        var args = new Avalonia.Input.PointerPressedEventArgs
-        {
-            Pointer = new Avalonia.Input.Pointer(Avalonia.Input.PointerType.Mouse),
-            GetCurrentPoint = _ => new Avalonia.Input.PointerPoint(new Avalonia.Point(100, 100), Avalonia.Input.PointerPointProperties.None)
-        };
-
-        // Act
-        view.PreviewImage_PointerPressed(view, args);
-
-        // Assert
-        // 验证拖动开始
-        Assert.NotNull(view);
-    }
-
-    /// <summary>
-    /// 测试预览图像鼠标移动事件
-    /// </summary>
-    [Fact]
-    public void PreviewImage_PointerMoved_ShouldUpdateScrollPosition()
-    {
-        // Arrange
-        var view = new PdfPreviewView
-        {
-            DataContext = _viewModel
-        };
-        
-        // 模拟鼠标按下事件
-        var pressedArgs = new Avalonia.Input.PointerPressedEventArgs
-        {
-            Pointer = new Avalonia.Input.Pointer(Avalonia.Input.PointerType.Mouse),
-            GetCurrentPoint = _ => new Avalonia.Input.PointerPoint(new Avalonia.Point(100, 100), Avalonia.Input.PointerPointProperties.None)
-        };
-        
-        view.PreviewImage_PointerPressed(view, pressedArgs);
-        
-        // 模拟鼠标移动事件
-        var movedArgs = new Avalonia.Input.PointerEventArgs
-        {
-            Pointer = new Avalonia.Input.Pointer(Avalonia.Input.PointerType.Mouse),
-            GetCurrentPoint = _ => new Avalonia.Input.PointerPoint(new Avalonia.Point(150, 150), Avalonia.Input.PointerPointProperties.None)
-        };
-
-        // Act
-        view.PreviewImage_PointerMoved(view, movedArgs);
-
-        // Assert
-        // 验证滚动位置更新
-        Assert.NotNull(view);
-    }
-
-    /// <summary>
-    /// 测试预览图像鼠标释放事件
-    /// </summary>
-    [Fact]
-    public void PreviewImage_PointerReleased_ShouldStopDragging()
-    {
-        // Arrange
-        var view = new PdfPreviewView
-        {
-            DataContext = _viewModel
-        };
-        
-        // 模拟鼠标按下事件
-        var pressedArgs = new Avalonia.Input.PointerPressedEventArgs
-        {
-            Pointer = new Avalonia.Input.Pointer(Avalonia.Input.PointerType.Mouse),
-            GetCurrentPoint = _ => new Avalonia.Input.PointerPoint(new Avalonia.Point(100, 100), Avalonia.Input.PointerPointProperties.None)
-        };
-        
-        view.PreviewImage_PointerPressed(view, pressedArgs);
-        
-        // 模拟鼠标释放事件
-        var releasedArgs = new Avalonia.Input.PointerReleasedEventArgs
-        {
-            Pointer = new Avalonia.Input.Pointer(Avalonia.Input.PointerType.Mouse),
-            GetCurrentPoint = _ => new Avalonia.Input.PointerPoint(new Avalonia.Point(150, 150), Avalonia.Input.PointerPointProperties.None)
-        };
-
-        // Act
-        view.PreviewImage_PointerReleased(view, releasedArgs);
-
-        // Assert
-        // 验证拖动停止
-        Assert.NotNull(view);
-    }
-
-    /// <summary>
-    /// 测试缩略图点击事件
-    /// </summary>
-    [Fact]
-    public void Thumbnail_PointerPressed_ShouldUpdateCurrentPage()
-    {
-        // Arrange
-        var view = new PdfPreviewView
-        {
-            DataContext = _viewModel
-        };
-        
-        // 设置考试试卷
         var examPaper = new ExamPaper
         {
             Id = Guid.NewGuid(),
             Title = "Test Exam Paper",
-            Content = "Test Content",
-            FilePath = Path.Combine(_testOutputDirectory, $"{Guid.NewGuid()}.pdf")
+            Content = "Test Content"
         };
         
         var previewData = new byte[] { 1, 2, 3, 4, 5 };
@@ -220,47 +100,26 @@ public class PdfPreviewViewTests : IDisposable
             .ReturnsAsync(previewData);
         
         _viewModel.SelectedExamPaper = examPaper;
-        
-        // 创建缩略图项
-        var thumbnailItem = new PdfPreviewViewModel.ThumbnailItem
-        {
-            PageNumber = 3,
-            ImageData = previewData
-        };
-        
-        // 模拟缩略图点击事件
-        var args = new Avalonia.Input.PointerPressedEventArgs
-        {
-            Pointer = new Avalonia.Input.Pointer(Avalonia.Input.PointerType.Mouse),
-            Source = thumbnailItem
-        };
 
         // Act
-        view.Thumbnail_PointerPressed(view, args);
+        _viewModel.HandleThumbnailClick(2); // 点击第3页（索引为2）
 
         // Assert
         Assert.Equal(3, _viewModel.CurrentPage);
     }
 
     /// <summary>
-    /// 测试工具栏按钮点击事件
+    /// 测试工具栏按钮功能
     /// </summary>
     [Fact]
-    public void ToolBarButtons_ShouldExecuteCommands()
+    public void ToolBarCommands_ShouldExecuteCorrectly()
     {
         // Arrange
-        var view = new PdfPreviewView
-        {
-            DataContext = _viewModel
-        };
-        
-        // 设置考试试卷
         var examPaper = new ExamPaper
         {
             Id = Guid.NewGuid(),
             Title = "Test Exam Paper",
-            Content = "Test Content",
-            FilePath = Path.Combine(_testOutputDirectory, $"{Guid.NewGuid()}.pdf")
+            Content = "Test Content"
         };
         
         var previewData = new byte[] { 1, 2, 3, 4, 5 };
@@ -279,7 +138,7 @@ public class PdfPreviewViewTests : IDisposable
         var initialZoom = _viewModel.ZoomLevel;
 
         // Act - 测试上一页按钮
-        _viewModel.GoToPreviousPageCommand.Execute(null);
+        _viewModel.PreviousPageCommand.Execute(null);
 
         // Assert
         Assert.Equal(initialPage - 1, _viewModel.CurrentPage);
@@ -306,7 +165,7 @@ public class PdfPreviewViewTests : IDisposable
         var initialDisplayMode = _viewModel.DisplayMode;
 
         // Act
-        _viewModel.ToggleDisplayModeCommand.Execute(null);
+        _viewModel.ToggleDualPageViewCommand.Execute(null);
 
         // Assert
         Assert.NotEqual(initialDisplayMode, _viewModel.DisplayMode);
@@ -348,11 +207,11 @@ public class PdfPreviewViewTests : IDisposable
         var initialPreviewQuality = _viewModel.PreviewQuality;
 
         // Act
-        _viewModel.PreviewQuality = PreviewQuality.High;
+        _viewModel.PreviewQuality = 90;
 
         // Assert
         Assert.NotEqual(initialPreviewQuality, _viewModel.PreviewQuality);
-        Assert.Equal(PreviewQuality.High, _viewModel.PreviewQuality);
+        Assert.Equal(90, _viewModel.PreviewQuality);
     }
 
     /// <summary>
@@ -368,7 +227,7 @@ public class PdfPreviewViewTests : IDisposable
         };
         
         var initialBrightness = _viewModel.Brightness;
-        var newBrightness = 1.2;
+        var newBrightness = 20;
 
         // Act
         _viewModel.Brightness = newBrightness;
@@ -391,7 +250,7 @@ public class PdfPreviewViewTests : IDisposable
         };
         
         var initialContrast = _viewModel.Contrast;
-        var newContrast = 1.2;
+        var newContrast = 20;
 
         // Act
         _viewModel.Contrast = newContrast;

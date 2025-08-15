@@ -11,6 +11,11 @@ public class TemplateSection
     public Guid Id { get; set; }
     
     /// <summary>
+    /// 所属模板ID
+    /// </summary>
+    public Guid TemplateId { get; set; }
+    
+    /// <summary>
     /// 章节标题
     /// </summary>
     public string Title { get; set; } = string.Empty;
@@ -26,6 +31,11 @@ public class TemplateSection
     public int QuestionCount { get; set; }
     
     /// <summary>
+    /// 难度级别
+    /// </summary>
+    public string Difficulty { get; set; } = "中等";
+    
+    /// <summary>
     /// 总分值
     /// </summary>
     public decimal TotalPoints { get; set; }
@@ -34,4 +44,14 @@ public class TemplateSection
     /// 题目ID列表
     /// </summary>
     public List<Guid> QuestionIds { get; set; } = new();
+    
+    /// <summary>
+    /// 创建时间
+    /// </summary>
+    public DateTime CreatedAt { get; set; }
+    
+    /// <summary>
+    /// 更新时间
+    /// </summary>
+    public DateTime UpdatedAt { get; set; }
 }

@@ -7,6 +7,7 @@ using QuizForge.Data.Contexts;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
+using Xunit;
 
 namespace QuizForge.Tests.Unit;
 
@@ -22,8 +23,12 @@ public class QuestionServiceTests
     private QuestionService _questionService;
     private List<Question> _testQuestions;
 
-    [SetUp]
-    public void Setup()
+    public QuestionServiceTests()
+    {
+        Setup();
+    }
+
+    private void Setup()
     {
         // 创建模拟对象
         _mockQuestionRepository = new Mock<IQuestionRepository>();
@@ -86,7 +91,7 @@ public class QuestionServiceTests
             _mockExcelParser.Object);
     }
 
-    [Test]
+    [Fact]
     public async Task GetRandomQuestionsAsync_WithValidCount_ReturnsQuestions()
     {
         // Arrange
@@ -102,14 +107,14 @@ public class QuestionServiceTests
         var result = await _questionService.GetRandomQuestionsAsync(count);
 
         // Assert
-        Assert.IsNotNull(result);
-        Assert.AreEqual(count, result.Count);
+        Assert.NotNull(result);
+        Assert.Equal(count, result.Count);
         _mockQuestionRepository.Verify(repo => repo.GetAllQuestionsAsync(), Times.Once);
         _mockQuestionProcessor.Verify(processor => processor.GetRandomQuestions(
             count, It.IsAny<QuestionBank>(), null, null), Times.Once);
     }
 
-    [Test]
+    [Fact]
     public async Task GetRandomQuestionsAsync_WithCategoryFilter_ReturnsFilteredQuestions()
     {
         // Arrange
@@ -128,13 +133,13 @@ public class QuestionServiceTests
         var result = await _questionService.GetRandomQuestionsAsync(count, category);
 
         // Assert
-        Assert.IsNotNull(result);
-        Assert.AreEqual(count, result.Count);
+        Assert.NotNull(result);
+        Assert.Equal(count, result.Count);
         _mockQuestionProcessor.Verify(processor => processor.GetRandomQuestions(
             count, It.IsAny<QuestionBank>(), category, null), Times.Once);
     }
 
-    [Test]
+    [Fact]
     public async Task GetRandomQuestionsAsync_WithDifficultyFilter_ReturnsFilteredQuestions()
     {
         // Arrange
@@ -153,13 +158,13 @@ public class QuestionServiceTests
         var result = await _questionService.GetRandomQuestionsAsync(count, null, difficulty);
 
         // Assert
-        Assert.IsNotNull(result);
-        Assert.AreEqual(count, result.Count);
+        Assert.NotNull(result);
+        Assert.Equal(count, result.Count);
         _mockQuestionProcessor.Verify(processor => processor.GetRandomQuestions(
             count, It.IsAny<QuestionBank>(), null, difficulty), Times.Once);
     }
 
-    [Test]
+    [Fact]
     public async Task GetRandomQuestionsAsync_WithBothFilters_ReturnsFilteredQuestions()
     {
         // Arrange
@@ -181,13 +186,13 @@ public class QuestionServiceTests
         var result = await _questionService.GetRandomQuestionsAsync(count, category, difficulty);
 
         // Assert
-        Assert.IsNotNull(result);
-        Assert.AreEqual(count, result.Count);
+        Assert.NotNull(result);
+        Assert.Equal(count, result.Count);
         _mockQuestionProcessor.Verify(processor => processor.GetRandomQuestions(
             count, It.IsAny<QuestionBank>(), category, difficulty), Times.Once);
     }
 
-    [Test]
+    [Fact]
     public void GetRandomQuestionsAsync_WithInvalidCount_ThrowsException()
     {
         // Arrange
@@ -198,7 +203,7 @@ public class QuestionServiceTests
             _questionService.GetRandomQuestionsAsync(count));
     }
 
-    [Test]
+    [Fact]
     public async Task GetRandomQuestionsAsync_WithNoQuestions_ReturnsEmptyList()
     {
         // Arrange
@@ -210,14 +215,14 @@ public class QuestionServiceTests
         var result = await _questionService.GetRandomQuestionsAsync(count);
 
         // Assert
-        Assert.IsNotNull(result);
-        Assert.AreEqual(0, result.Count);
+        Assert.NotNull(result);
+        Assert.Equal(0, result.Count);
         _mockQuestionRepository.Verify(repo => repo.GetAllQuestionsAsync(), Times.Once);
         _mockQuestionProcessor.Verify(processor => processor.GetRandomQuestions(
             It.IsAny<int>(), It.IsAny<QuestionBank>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
 
-    [Test]
+    [Fact]
     public async Task GetRandomQuestionsAsync_WhenRepositoryThrows_ThrowsException()
     {
         // Arrange
@@ -226,12 +231,12 @@ public class QuestionServiceTests
             .ThrowsAsync(new Exception("Database error"));
 
         // Act & Assert
-        var ex = Assert.ThrowsAsync<Exception>(() => 
+        var ex = await Assert.ThrowsAsync<Exception>(() => 
             _questionService.GetRandomQuestionsAsync(count));
-        Assert.That(ex.Message, Does.Contain("随机获取题目失败"));
+        Assert.Contains("随机获取题目失败", ex.Message);
     }
 
-    [Test]
+    [Fact]
     public async Task ImportQuestionBankAsync_WithMarkdownFormat_CallsMarkdownParser()
     {
         // Arrange
@@ -250,13 +255,13 @@ public class QuestionServiceTests
         var result = await _questionService.ImportQuestionBankAsync(filePath, format);
 
         // Assert
-        Assert.IsNotNull(result);
+        Assert.NotNull(result);
         _mockMarkdownParser.Verify(parser => parser.ParseAsync(filePath), Times.Once);
         _mockQuestionProcessor.Verify(processor => processor.ProcessQuestionBank(questionBank), Times.Once);
         _mockQuestionRepository.Verify(repo => repo.AddAsync(questionBank), Times.Once);
     }
 
-    [Test]
+    [Fact]
     public async Task ImportQuestionBankAsync_WithExcelFormat_CallsExcelParser()
     {
         // Arrange
@@ -275,13 +280,13 @@ public class QuestionServiceTests
         var result = await _questionService.ImportQuestionBankAsync(filePath, format);
 
         // Assert
-        Assert.IsNotNull(result);
+        Assert.NotNull(result);
         _mockExcelParser.Verify(parser => parser.ParseAsync(filePath), Times.Once);
         _mockQuestionProcessor.Verify(processor => processor.ProcessQuestionBank(questionBank), Times.Once);
         _mockQuestionRepository.Verify(repo => repo.AddAsync(questionBank), Times.Once);
     }
 
-    [Test]
+    [Fact]
     public void ImportQuestionBankAsync_WithUnsupportedFormat_ThrowsException()
     {
         // Arrange

@@ -3,6 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="clr-namespace:QuizForge.App.ViewModels"
+             xmlns:controls="clr-namespace:Avalonia.Controls;assembly=Avalonia.Controls.DataGrid"
              mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
              x:Class="QuizForge.App.Views.QuestionBankView"
              x:DataType="vm:QuestionBankViewModel">
@@ -76,7 +77,7 @@
                     
                     <TextBlock Grid.Row="0" Text="题目列表" FontSize="16" FontWeight="Bold" Margin="5"/>
                     
-                    <DataGrid Grid.Row="1" 
+                    <controls:DataGrid Grid.Row="1" 
                               ItemsSource="{Binding Questions}" 
                               SelectedItem="{Binding SelectedQuestion}"
                               AutoGenerateColumns="False"
@@ -84,15 +85,15 @@
                               CanUserResizeColumns="True"
                               CanUserSortColumns="True"
                               Margin="5">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="80" IsReadOnly="True"/>
-                            <DataGridTextColumn Header="类型" Binding="{Binding Type}" Width="100"/>
-                            <DataGridTextColumn Header="难度" Binding="{Binding Difficulty}" Width="80"/>
-                            <DataGridTextColumn Header="类别" Binding="{Binding Category}" Width="100"/>
-                            <DataGridTextColumn Header="内容" Binding="{Binding Content}" Width="*"/>
-                            <DataGridTextColumn Header="分值" Binding="{Binding Points}" Width="80"/>
-                        </DataGrid.Columns>
-                    </DataGrid>
+                        <controls:DataGrid.Columns>
+                            <controls:DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="80" IsReadOnly="True"/>
+                            <controls:DataGridTextColumn Header="类型" Binding="{Binding Type}" Width="100"/>
+                            <controls:DataGridTextColumn Header="难度" Binding="{Binding Difficulty}" Width="80"/>
+                            <controls:DataGridTextColumn Header="类别" Binding="{Binding Category}" Width="100"/>
+                            <controls:DataGridTextColumn Header="内容" Binding="{Binding Content}" Width="*"/>
+                            <controls:DataGridTextColumn Header="分值" Binding="{Binding Points}" Width="80"/>
+                        </controls:DataGrid.Columns>
+                    </controls:DataGrid>
                 </Grid>
             </Border>
         </Grid>

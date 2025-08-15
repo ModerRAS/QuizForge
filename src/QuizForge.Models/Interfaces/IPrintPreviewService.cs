@@ -99,6 +99,16 @@ public interface IPrintPreviewService
     Task<byte[]> GenerateThumbnailAsync(string pdfPath, int pageNumber = 1, int thumbnailSize = 200);
 
     /// <summary>
+    /// 生成缩略图预览（重载方法）
+    /// </summary>
+    /// <param name="pdfPath">PDF文件路径</param>
+    /// <param name="pageNumber">页码（从1开始）</param>
+    /// <param name="width">缩略图宽度</param>
+    /// <param name="height">缩略图高度</param>
+    /// <returns>缩略图图像数据</returns>
+    Task<byte[]> GenerateThumbnailPreviewAsync(string pdfPath, int pageNumber = 1, int width = 200, int height = 200);
+
+    /// <summary>
     /// 获取预览配置
     /// </summary>
     /// <returns>预览配置</returns>
@@ -137,6 +147,15 @@ public interface IPrintPreviewService
     /// <param name="contrast">对比度调整值（-100到100）</param>
     /// <returns>调整后的图像数据</returns>
     Task<byte[]> AdjustContrastAsync(byte[] imageData, int contrast);
+    
+    /// <summary>
+    /// 同时调整预览图像亮度和对比度
+    /// </summary>
+    /// <param name="imageData">原始图像数据</param>
+    /// <param name="brightness">亮度调整值（-100到100）</param>
+    /// <param name="contrast">对比度调整值（-100到100）</param>
+    /// <returns>调整后的图像数据</returns>
+    Task<byte[]> AdjustBrightnessContrastAsync(byte[] imageData, int brightness, int contrast);
 }
 
 /// <summary>
@@ -330,5 +349,20 @@ public enum PreviewDisplayMode
     /// <summary>
     /// 缩略图网格
     /// </summary>
-    ThumbnailGrid
+    ThumbnailGrid,
+    
+    /// <summary>
+    /// 缩略图视图
+    /// </summary>
+    Thumbnail,
+    
+    /// <summary>
+    /// 全屏显示
+    /// </summary>
+    FullScreen,
+    
+    /// <summary>
+    /// 演示模式
+    /// </summary>
+    Presentation
 }

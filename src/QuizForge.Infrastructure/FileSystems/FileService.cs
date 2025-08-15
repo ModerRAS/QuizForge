@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using QuizForge.Models.Interfaces;
+using System.Collections.Generic;
 
 namespace QuizForge.Infrastructure.FileSystems;
 
@@ -203,6 +204,25 @@ public class FileService : IFileService
         {
             _logger.LogError(ex, "文档打印失败: {FilePath}", filePath);
             return false;
+        }
+    }
+    
+    /// <summary>
+    /// 获取可用打印机列表
+    /// </summary>
+    /// <returns>打印机名称列表</returns>
+    public async Task<List<string>> GetAvailablePrintersAsync()
+    {
+        try
+        {
+            // TODO: 实现实际的打印机获取逻辑
+            await Task.Delay(500); // 模拟获取操作
+            return new List<string> { "Microsoft Print to PDF", "默认打印机" };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "获取可用打印机失败");
+            return new List<string>();
         }
     }
 }

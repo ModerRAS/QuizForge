@@ -2,8 +2,8 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using QuizForge.Models;
 using QuizForge.Models.Interfaces;
+using QuizForge.Services;
 using QuizForge.App.ViewModels;
-using QuizForge.Infrastructure.Services;
 using Xunit;
 
 namespace QuizForge.Tests.ViewModels;
@@ -13,11 +13,8 @@ namespace QuizForge.Tests.ViewModels;
 /// </summary>
 public class PdfPreviewViewModelTests : IDisposable
 {
-    private readonly Mock<ILogger<PdfPreviewViewModel>> _mockLogger;
-    private readonly Mock<ILogger<PrintPreviewService>> _mockPrintPreviewLogger;
-    private readonly Mock<IPdfEngine> _mockPdfEngine;
+    private readonly Mock<IExportService> _mockExportService;
     private readonly Mock<IPrintPreviewService> _mockPrintPreviewService;
-    private readonly Mock<IExamPaperService> _mockExamPaperService;
     private readonly string _testOutputDirectory;
     private readonly PdfPreviewViewModel _viewModel;
 
@@ -27,11 +24,8 @@ public class PdfPreviewViewModelTests : IDisposable
     public PdfPreviewViewModelTests()
     {
         // 初始化Mock对象
-        _mockLogger = new Mock<ILogger<PdfPreviewViewModel>>();
-        _mockPrintPreviewLogger = new Mock<ILogger<PrintPreviewService>>();
-        _mockPdfEngine = new Mock<IPdfEngine>();
+        _mockExportService = new Mock<IExportService>();
         _mockPrintPreviewService = new Mock<IPrintPreviewService>();
-        _mockExamPaperService = new Mock<IExamPaperService>();
 
         // 设置测试输出目录
         _testOutputDirectory = Path.Combine(Path.GetTempPath(), "QuizForge", "Tests");
@@ -44,9 +38,8 @@ public class PdfPreviewViewModelTests : IDisposable
 
         // 创建视图模型实例
         _viewModel = new PdfPreviewViewModel(
-            _mockLogger.Object,
-            _mockPrintPreviewService.Object,
-            _mockExamPaperService.Object);
+            _mockExportService.Object,
+            _mockPrintPreviewService.Object);
     }
 
     /// <summary>
@@ -59,29 +52,43 @@ public class PdfPreviewViewModelTests : IDisposable
         Assert.NotNull(_viewModel);
         Assert.Null(_viewModel.SelectedExamPaper);
         Assert.Equal(1, _viewModel.CurrentPage);
-        Assert.Equal(1.0, _viewModel.ZoomLevel);
-        Assert.Equal(0, _viewModel.PageCount);
+        Assert.Equal(100, _viewModel.ZoomLevel);
+        Assert.Equal(1, _viewModel.TotalPages);
         Assert.Null(_viewModel.CurrentPreviewImage);
         Assert.NotNull(_viewModel.ThumbnailImages);
         Assert.Empty(_viewModel.ThumbnailImages);
         Assert.NotNull(_viewModel.PreviewConfig);
         Assert.True(_viewModel.ShowSealLine);
-        Assert.Equal(PreviewQuality.Medium, _viewModel.PreviewQuality);
-        Assert.Equal(1.0, _viewModel.Brightness);
-        Assert.Equal(1.0, _viewModel.Contrast);
+        Assert.Equal(90, _viewModel.PreviewQuality);
+        Assert.Equal(0, _viewModel.Brightness);
+        Assert.Equal(0, _viewModel.Contrast);
         Assert.Equal(PreviewDisplayMode.SinglePage, _viewModel.DisplayMode);
-        Assert.NotNull(_viewModel.GoToFirstPageCommand);
-        Assert.NotNull(_viewModel.GoToPreviousPageCommand);
-        Assert.NotNull(_viewModel.GoToNextPageCommand);
-        Assert.NotNull(_viewModel.GoToLastPageCommand);
+        Assert.NotNull(_viewModel.FirstPageCommand);
+        Assert.NotNull(_viewModel.PreviousPageCommand);
+        Assert.NotNull(_viewModel.NextPageCommand);
+        Assert.NotNull(_viewModel.LastPageCommand);
         Assert.NotNull(_viewModel.ZoomInCommand);
         Assert.NotNull(_viewModel.ZoomOutCommand);
-        Assert.NotNull(_viewModel.ZoomToFitCommand);
-        Assert.NotNull(_viewModel.RotateLeftCommand);
-        Assert.NotNull(_viewModel.RotateRightCommand);
-        Assert.NotNull(_viewModel.RefreshPreviewCommand);
+        Assert.NotNull(_viewModel.FitToWidthCommand);
         Assert.NotNull(_viewModel.ToggleSealLineCommand);
-        Assert.NotNull(_viewModel.ToggleDisplayModeCommand);
+        Assert.NotNull(_viewModel.ToggleHighQualityCommand);
+        Assert.NotNull(_viewModel.ToggleThumbnailViewCommand);
+        Assert.NotNull(_viewModel.ToggleMouseWheelZoomCommand);
+        Assert.NotNull(_viewModel.ToggleDragNavigationCommand);
+        Assert.NotNull(_viewModel.ToggleContinuousScrollCommand);
+        Assert.NotNull(_viewModel.ToggleDualPageViewCommand);
+        Assert.NotNull(_viewModel.ResetImageAdjustmentsCommand);
+        Assert.NotNull(_viewModel.IncreaseBrightnessCommand);
+        Assert.NotNull(_viewModel.DecreaseBrightnessCommand);
+        Assert.NotNull(_viewModel.IncreaseContrastCommand);
+        Assert.NotNull(_viewModel.DecreaseContrastCommand);
+        Assert.NotNull(_viewModel.SetDisplayModeCommand);
+        Assert.NotNull(_viewModel.SavePreviewConfigCommand);
+        Assert.NotNull(_viewModel.LoadPreviewConfigCommand);
+        Assert.NotNull(_viewModel.ExportToPdfCommand);
+        Assert.NotNull(_viewModel.PrintCommand);
+        Assert.NotNull(_viewModel.RefreshCommand);
+        Assert.NotNull(_viewModel.ShowPropertiesCommand);
     }
 
     /// <summary>
@@ -95,8 +102,7 @@ public class PdfPreviewViewModelTests : IDisposable
         {
             Id = Guid.NewGuid(),
             Title = "Test Exam Paper",
-            Content = "Test Content",
-            FilePath = Path.Combine(_testOutputDirectory, $"{Guid.NewGuid()}.pdf")
+            Content = "Test Content"
         };
         
         var previewData = new byte[] { 1, 2, 3, 4, 5 };
@@ -113,7 +119,7 @@ public class PdfPreviewViewModelTests : IDisposable
 
         // Assert
         Assert.Equal(examPaper, _viewModel.SelectedExamPaper);
-        Assert.Equal(pageCount, _viewModel.PageCount);
+        Assert.Equal(pageCount, _viewModel.TotalPages);
         Assert.Equal(1, _viewModel.CurrentPage);
         Assert.NotNull(_viewModel.CurrentPreviewImage);
     }
@@ -129,8 +135,7 @@ public class PdfPreviewViewModelTests : IDisposable
         {
             Id = Guid.NewGuid(),
             Title = "Test Exam Paper",
-            Content = "Test Content",
-            FilePath = Path.Combine(_testOutputDirectory, $"{Guid.NewGuid()}.pdf")
+            Content = "Test Content"
         };
         
         var previewData = new byte[] { 1, 2, 3, 4, 5 };
@@ -159,7 +164,7 @@ public class PdfPreviewViewModelTests : IDisposable
     public void ZoomLevelChanged_ShouldUpdateZoomLevel()
     {
         // Arrange
-        var newZoomLevel = 1.5;
+        var newZoomLevel = 150.0;
 
         // Act
         _viewModel.ZoomLevel = newZoomLevel;
@@ -175,7 +180,7 @@ public class PdfPreviewViewModelTests : IDisposable
     public void DisplayModeChanged_ShouldUpdateDisplayMode()
     {
         // Arrange
-        var newDisplayMode = PreviewDisplayMode.TwoPage;
+        var newDisplayMode = PreviewDisplayMode.DualPage;
 
         // Act
         _viewModel.DisplayMode = newDisplayMode;
@@ -207,7 +212,7 @@ public class PdfPreviewViewModelTests : IDisposable
     public void PreviewQualityChanged_ShouldUpdatePreviewQuality()
     {
         // Arrange
-        var newPreviewQuality = PreviewQuality.High;
+        var newPreviewQuality = 90;
 
         // Act
         _viewModel.PreviewQuality = newPreviewQuality;
@@ -223,7 +228,7 @@ public class PdfPreviewViewModelTests : IDisposable
     public void BrightnessChanged_ShouldUpdateBrightness()
     {
         // Arrange
-        var newBrightness = 1.2;
+        var newBrightness = 20;
 
         // Act
         _viewModel.Brightness = newBrightness;
@@ -239,7 +244,7 @@ public class PdfPreviewViewModelTests : IDisposable
     public void ContrastChanged_ShouldUpdateContrast()
     {
         // Arrange
-        var newContrast = 1.2;
+        var newContrast = 20;
 
         // Act
         _viewModel.Contrast = newContrast;
@@ -252,15 +257,14 @@ public class PdfPreviewViewModelTests : IDisposable
     /// 测试转到首页命令
     /// </summary>
     [Fact]
-    public void GoToFirstPageCommand_ShouldSetCurrentPageToOne()
+    public void FirstPageCommand_ShouldSetCurrentPageToOne()
     {
         // Arrange
         var examPaper = new ExamPaper
         {
             Id = Guid.NewGuid(),
             Title = "Test Exam Paper",
-            Content = "Test Content",
-            FilePath = Path.Combine(_testOutputDirectory, $"{Guid.NewGuid()}.pdf")
+            Content = "Test Content"
         };
         
         var previewData = new byte[] { 1, 2, 3, 4, 5 };
@@ -277,7 +281,7 @@ public class PdfPreviewViewModelTests : IDisposable
         _viewModel.CurrentPage = 3;
 
         // Act
-        _viewModel.GoToFirstPageCommand.Execute(null);
+        _viewModel.FirstPageCommand.Execute(null);
 
         // Assert
         Assert.Equal(1, _viewModel.CurrentPage);
@@ -287,15 +291,14 @@ public class PdfPreviewViewModelTests : IDisposable
     /// 测试转到上一页命令
     /// </summary>
     [Fact]
-    public void GoToPreviousPageCommand_ShouldDecrementCurrentPage()
+    public void PreviousPageCommand_ShouldDecrementCurrentPage()
     {
         // Arrange
         var examPaper = new ExamPaper
         {
             Id = Guid.NewGuid(),
             Title = "Test Exam Paper",
-            Content = "Test Content",
-            FilePath = Path.Combine(_testOutputDirectory, $"{Guid.NewGuid()}.pdf")
+            Content = "Test Content"
         };
         
         var previewData = new byte[] { 1, 2, 3, 4, 5 };
@@ -312,7 +315,7 @@ public class PdfPreviewViewModelTests : IDisposable
         _viewModel.CurrentPage = 3;
 
         // Act
-        _viewModel.GoToPreviousPageCommand.Execute(null);
+        _viewModel.PreviousPageCommand.Execute(null);
 
         // Assert
         Assert.Equal(2, _viewModel.CurrentPage);
@@ -322,15 +325,14 @@ public class PdfPreviewViewModelTests : IDisposable
     /// 测试转到下一页命令
     /// </summary>
     [Fact]
-    public void GoToNextPageCommand_ShouldIncrementCurrentPage()
+    public void NextPageCommand_ShouldIncrementCurrentPage()
     {
         // Arrange
         var examPaper = new ExamPaper
         {
             Id = Guid.NewGuid(),
             Title = "Test Exam Paper",
-            Content = "Test Content",
-            FilePath = Path.Combine(_testOutputDirectory, $"{Guid.NewGuid()}.pdf")
+            Content = "Test Content"
         };
         
         var previewData = new byte[] { 1, 2, 3, 4, 5 };
@@ -347,7 +349,7 @@ public class PdfPreviewViewModelTests : IDisposable
         _viewModel.CurrentPage = 3;
 
         // Act
-        _viewModel.GoToNextPageCommand.Execute(null);
+        _viewModel.NextPageCommand.Execute(null);
 
         // Assert
         Assert.Equal(4, _viewModel.CurrentPage);
@@ -357,15 +359,14 @@ public class PdfPreviewViewModelTests : IDisposable
     /// 测试转到末页命令
     /// </summary>
     [Fact]
-    public void GoToLastPageCommand_ShouldSetCurrentPageToPageCount()
+    public void LastPageCommand_ShouldSetCurrentPageToPageCount()
     {
         // Arrange
         var examPaper = new ExamPaper
         {
             Id = Guid.NewGuid(),
             Title = "Test Exam Paper",
-            Content = "Test Content",
-            FilePath = Path.Combine(_testOutputDirectory, $"{Guid.NewGuid()}.pdf")
+            Content = "Test Content"
         };
         
         var previewData = new byte[] { 1, 2, 3, 4, 5 };
@@ -382,7 +383,7 @@ public class PdfPreviewViewModelTests : IDisposable
         _viewModel.CurrentPage = 3;
 
         // Act
-        _viewModel.GoToLastPageCommand.Execute(null);
+        _viewModel.LastPageCommand.Execute(null);
 
         // Assert
         Assert.Equal(pageCount, _viewModel.CurrentPage);
@@ -395,7 +396,7 @@ public class PdfPreviewViewModelTests : IDisposable
     public void ZoomInCommand_ShouldIncreaseZoomLevel()
     {
         // Arrange
-        var initialZoomLevel = 1.0;
+        var initialZoomLevel = 100.0;
 
         // Act
         _viewModel.ZoomInCommand.Execute(null);
@@ -411,7 +412,7 @@ public class PdfPreviewViewModelTests : IDisposable
     public void ZoomOutCommand_ShouldDecreaseZoomLevel()
     {
         // Arrange
-        var initialZoomLevel = 1.0;
+        var initialZoomLevel = 100.0;
 
         // Act
         _viewModel.ZoomOutCommand.Execute(null);
@@ -424,107 +425,46 @@ public class PdfPreviewViewModelTests : IDisposable
     /// 测试适应窗口命令
     /// </summary>
     [Fact]
-    public void ZoomToFitCommand_ShouldSetZoomLevelToOne()
+    public void FitToWidthCommand_ShouldToggleFitToWidth()
     {
         // Arrange
-        _viewModel.ZoomLevel = 1.5;
+        var initialFitToWidth = _viewModel.IsFitToWidth;
 
         // Act
-        _viewModel.ZoomToFitCommand.Execute(null);
+        _viewModel.FitToWidthCommand.Execute(null);
 
         // Assert
-        Assert.Equal(1.0, _viewModel.ZoomLevel);
+        Assert.NotEqual(initialFitToWidth, _viewModel.IsFitToWidth);
     }
 
     /// <summary>
-    /// 测试左旋转命令
+    /// 测试高质量模式切换命令
     /// </summary>
     [Fact]
-    public void RotateLeftCommand_ShouldRotateImageLeft()
+    public void ToggleHighQualityCommand_ShouldToggleHighQualityMode()
+    {
+        // Arrange
+        var initialHighQuality = _viewModel.IsHighQualityMode;
+
+        // Act
+        _viewModel.ToggleHighQualityCommand.Execute(null);
+
+        // Assert
+        Assert.NotEqual(initialHighQuality, _viewModel.IsHighQualityMode);
+    }
+
+    /// <summary>
+    /// 测试刷新命令
+    /// </summary>
+    [Fact]
+    public void RefreshCommand_ShouldRefreshPreview()
     {
         // Arrange
         var examPaper = new ExamPaper
         {
             Id = Guid.NewGuid(),
             Title = "Test Exam Paper",
-            Content = "Test Content",
-            FilePath = Path.Combine(_testOutputDirectory, $"{Guid.NewGuid()}.pdf")
-        };
-        
-        var previewData = new byte[] { 1, 2, 3, 4, 5 };
-        var pageCount = 5;
-        
-        _mockPrintPreviewService.Setup(x => x.GetPageCountAsync(It.IsAny<string>()))
-            .ReturnsAsync(pageCount);
-        
-        _mockPrintPreviewService.Setup(x => x.GeneratePreviewImageAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>()))
-            .ReturnsAsync(previewData);
-        
-        _mockPrintPreviewService.Setup(x => x.RotatePreviewImageAsync(It.IsAny<byte[]>(), It.IsAny<int>()))
-            .ReturnsAsync(previewData);
-
-        // 设置初始状态
-        _viewModel.SelectedExamPaper = examPaper;
-
-        // Act
-        _viewModel.RotateLeftCommand.Execute(null);
-
-        // Assert
-        // 验证旋转方法被调用
-        _mockPrintPreviewService.Verify(x => x.RotatePreviewImageAsync(It.IsAny<byte[]>(), It.IsAny<int>()), Times.Once);
-    }
-
-    /// <summary>
-    /// 测试右旋转命令
-    /// </summary>
-    [Fact]
-    public void RotateRightCommand_ShouldRotateImageRight()
-    {
-        // Arrange
-        var examPaper = new ExamPaper
-        {
-            Id = Guid.NewGuid(),
-            Title = "Test Exam Paper",
-            Content = "Test Content",
-            FilePath = Path.Combine(_testOutputDirectory, $"{Guid.NewGuid()}.pdf")
-        };
-        
-        var previewData = new byte[] { 1, 2, 3, 4, 5 };
-        var pageCount = 5;
-        
-        _mockPrintPreviewService.Setup(x => x.GetPageCountAsync(It.IsAny<string>()))
-            .ReturnsAsync(pageCount);
-        
-        _mockPrintPreviewService.Setup(x => x.GeneratePreviewImageAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>()))
-            .ReturnsAsync(previewData);
-        
-        _mockPrintPreviewService.Setup(x => x.RotatePreviewImageAsync(It.IsAny<byte[]>(), It.IsAny<int>()))
-            .ReturnsAsync(previewData);
-
-        // 设置初始状态
-        _viewModel.SelectedExamPaper = examPaper;
-
-        // Act
-        _viewModel.RotateRightCommand.Execute(null);
-
-        // Assert
-        // 验证旋转方法被调用
-        _mockPrintPreviewService.Verify(x => x.RotatePreviewImageAsync(It.IsAny<byte[]>(), It.IsAny<int>()), Times.Once);
-    }
-
-    /// <summary>
-    /// 测试刷新预览命令
-    /// </summary>
-    [Fact]
-    public void RefreshPreviewCommand_ShouldReloadPreview()
-    {
-        // Arrange
-        var examPaper = new ExamPaper
-        {
-            Id = Guid.NewGuid(),
-            Title = "Test Exam Paper",
-            Content = "Test Content",
-            FilePath = Path.Combine(_testOutputDirectory, $"{Guid.NewGuid()}.pdf")
+            Content = "Test Content"
         };
         
         var previewData = new byte[] { 1, 2, 3, 4, 5 };
@@ -540,11 +480,11 @@ public class PdfPreviewViewModelTests : IDisposable
         _viewModel.SelectedExamPaper = examPaper;
 
         // Act
-        _viewModel.RefreshPreviewCommand.Execute(null);
+        _viewModel.RefreshCommand.Execute(null);
 
         // Assert
-        // 验证预览生成方法被调用
-        _mockPrintPreviewService.Verify(x => x.GeneratePreviewImageAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>()), Times.AtLeastOnce);
+        // 验证状态更新
+        Assert.Contains("正在刷新", _viewModel.Status);
     }
 
     /// <summary>
@@ -564,19 +504,19 @@ public class PdfPreviewViewModelTests : IDisposable
     }
 
     /// <summary>
-    /// 测试切换显示模式命令
+    /// 测试缩略图切换命令
     /// </summary>
     [Fact]
-    public void ToggleDisplayModeCommand_ShouldToggleDisplayMode()
+    public void ToggleThumbnailViewCommand_ShouldToggleThumbnailView()
     {
         // Arrange
-        var initialDisplayMode = _viewModel.DisplayMode;
+        var initialThumbnailView = _viewModel.IsThumbnailViewVisible;
 
         // Act
-        _viewModel.ToggleDisplayModeCommand.Execute(null);
+        _viewModel.ToggleThumbnailViewCommand.Execute(null);
 
         // Assert
-        Assert.NotEqual(initialDisplayMode, _viewModel.DisplayMode);
+        Assert.NotEqual(initialThumbnailView, _viewModel.IsThumbnailViewVisible);
     }
 
     /// <summary>

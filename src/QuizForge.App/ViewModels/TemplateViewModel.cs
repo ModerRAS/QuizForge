@@ -148,6 +148,247 @@ namespace QuizForge.App.ViewModels
         }
     }
 
+    /// <summary>
+    /// 创建示例模板
+    /// </summary>
+    private async Task CreateSampleTemplatesAsync()
+    {
+        // 简化实现：创建硬编码的示例模板
+        // 原本实现：应该从配置文件或数据库加载模板
+        try
+        {
+            var sampleTemplate = new ExamTemplate
+            {
+                Id = Guid.NewGuid(),
+                Name = "标准试卷模板",
+                Description = "适用于常规考试的标准试卷模板",
+                PaperSize = PaperSize.A4,
+                Orientation = "纵向",
+                MarginTop = 2.5,
+                MarginBottom = 2.5,
+                MarginLeft = 2.5,
+                MarginRight = 2.5,
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now
+            };
+
+            Templates.Add(sampleTemplate);
+            Status = "已创建示例模板";
+        }
+        catch (Exception ex)
+        {
+            Status = $"创建示例模板失败: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// 创建示例模板节
+    /// </summary>
+    private async Task CreateSampleSectionsAsync(Guid templateId)
+    {
+        // 简化实现：创建硬编码的示例模板节
+        // 原本实现：应该从配置文件或数据库加载模板节
+        try
+        {
+            var sampleSections = new List<TemplateSection>
+            {
+                new TemplateSection
+                {
+                    Id = Guid.NewGuid(),
+                    TemplateId = templateId,
+                    Title = "选择题",
+                    Instructions = "请选择正确答案",
+                    QuestionCount = 10,
+                    Difficulty = "中等",
+                    TotalPoints = 20,
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now
+                },
+                new TemplateSection
+                {
+                    Id = Guid.NewGuid(),
+                    TemplateId = templateId,
+                    Title = "填空题",
+                    Instructions = "请填写正确答案",
+                    QuestionCount = 5,
+                    Difficulty = "中等",
+                    TotalPoints = 10,
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now
+                }
+            };
+
+            foreach (var section in sampleSections)
+            {
+                Sections.Add(section);
+            }
+
+            Status = "已创建示例模板节";
+        }
+        catch (Exception ex)
+        {
+            Status = $"创建示例模板节失败: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// 初始化数据（异步版本）
+    /// </summary>
+    private async Task InitializeDataAsync()
+    {
+        // 简化实现：直接调用InitializeData
+        // 原本实现：应该有更复杂的初始化逻辑
+        await Task.Run(() => InitializeData());
+    }
+
+    /// <summary>
+    /// 显示确认对话框
+    /// </summary>
+    private async Task<bool?> ShowConfirmDialog(string title, string message)
+    {
+        // 简化实现：使用控制台输出模拟确认对话框
+        // 原本实现：应该使用自定义的确认对话框
+        Console.WriteLine($"{title}: {message}");
+        await Task.CompletedTask;
+        return true;
+    }
+
+    /// <summary>
+    /// 生成模板预览
+    /// </summary>
+    private async Task<string> GenerateTemplatePreviewAsync(ExamTemplate template)
+    {
+        // 简化实现：生成简单的文本预览
+        // 原本实现：应该生成完整的HTML或PDF预览
+        var preview = $"模板预览：{template.Name}\n\n";
+        preview += $"描述：{template.Description}\n";
+        preview += $"纸张大小：{template.PaperSize}\n";
+        preview += $"方向：{template.Orientation}\n";
+        preview += $"边距：上{template.MarginTop}厘米，下{template.MarginBottom}厘米，左{template.MarginLeft}厘米，右{template.MarginRight}厘米\n";
+        preview += $"模板节数：{template.Sections.Count}\n";
+        
+        return preview;
+    }
+
+    /// <summary>
+    /// 显示预览对话框
+    /// </summary>
+    private async Task ShowPreviewDialogAsync(string title, string content)
+    {
+        // 简化实现：使用控制台输出模拟预览对话框
+        // 原本实现：应该使用自定义的预览对话框
+        Console.WriteLine($"{title}: {content}");
+        await Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// 加载模板
+    /// </summary>
+    public async Task LoadTemplateAsync(ExamTemplate template)
+    {
+        // 简化实现：直接设置选中的模板
+        // 原本实现：应该从文件或数据库加载模板数据
+        SelectedTemplate = template;
+        Status = $"已加载模板：{template.Name}";
+    }
+
+    /// <summary>
+    /// 保存模板
+    /// </summary>
+    public async Task SaveTemplateAsync()
+    {
+        // 简化实现：直接调用SaveTemplate方法
+        // 原本实现：应该有更复杂的保存逻辑
+        await SaveTemplate();
+    }
+
+    /// <summary>
+    /// 另存为模板
+    /// </summary>
+    public async Task SaveTemplateAsAsync(string filePath)
+    {
+        // 简化实现：设置当前文件路径并保存
+        // 原本实现：应该处理文件格式转换和路径验证
+        CurrentFilePath = filePath;
+        await SaveTemplateAsync();
+    }
+
+    /// <summary>
+    /// 撤销操作
+    /// </summary>
+    public async Task UndoAsync()
+    {
+        // 简化实现：暂不实现撤销功能
+        // 原本实现：应该实现完整的撤销功能
+        Status = "撤销功能尚未实现";
+        await Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// 重做操作
+    /// </summary>
+    public async Task RedoAsync()
+    {
+        // 简化实现：暂不实现重做功能
+        // 原本实现：应该实现完整的重做功能
+        Status = "重做功能尚未实现";
+        await Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// 剪切操作
+    /// </summary>
+    public async Task CutAsync()
+    {
+        // 简化实现：暂不实现剪切功能
+        // 原本实现：应该实现完整的剪切功能
+        Status = "剪切功能尚未实现";
+        await Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// 复制操作
+    /// </summary>
+    public async Task CopyAsync()
+    {
+        // 简化实现：暂不实现复制功能
+        // 原本实现：应该实现完整的复制功能
+        Status = "复制功能尚未实现";
+        await Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// 粘贴操作
+    /// </summary>
+    public async Task PasteAsync()
+    {
+        // 简化实现：暂不实现粘贴功能
+        // 原本实现：应该实现完整的粘贴功能
+        Status = "粘贴功能尚未实现";
+        await Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// 删除选中项
+    /// </summary>
+    public async Task DeleteSelectedAsync()
+    {
+        // 简化实现：根据当前选中状态删除
+        // 原本实现：应该实现完整的删除功能
+        if (SelectedSection != null)
+        {
+            await DeleteSection();
+        }
+        else if (SelectedTemplate != null)
+        {
+            await DeleteTemplate();
+        }
+        else
+        {
+            Status = "没有可删除的项目";
+        }
+    }
+
     partial void OnSelectedTemplateChanged(ExamTemplate? value)
     {
         if (value != null)
@@ -155,8 +396,15 @@ namespace QuizForge.App.ViewModels
             _ = LoadSectionsAsync(value.Id); // 使用异步方法但不等待
             TemplateName = value.Name;
             TemplateDescription = value.Description;
-            SelectedPaperSize = value.PaperSize ?? "A4";
-            SelectedOrientation = value.Orientation ?? "纵向";
+            SelectedPaperSize = value.PaperSize switch
+            {
+                PaperSize.A4 => "A4",
+                PaperSize.A3 => "A3",
+                PaperSize.B4 => "B4",
+                PaperSize.B5 => "B5",
+                _ => "A4"
+            };
+            SelectedOrientation = value.Orientation;
             MarginTop = value.MarginTop;
             MarginBottom = value.MarginBottom;
             MarginLeft = value.MarginLeft;
@@ -176,7 +424,7 @@ namespace QuizForge.App.ViewModels
         }
     }
 
-    private async Task LoadSections(Guid templateId)
+    private async Task LoadSectionsAsync(Guid templateId)
     {
         // 原本实现：硬编码的模拟数据
         // 完整实现：从数据库加载模板节列表
@@ -254,7 +502,14 @@ namespace QuizForge.App.ViewModels
                     Id = Guid.NewGuid(),
                     Name = TemplateName,
                     Description = TemplateDescription,
-                    PaperSize = SelectedPaperSize,
+                    PaperSize = SelectedPaperSize switch
+                    {
+                        "A4" => PaperSize.A4,
+                        "A3" => PaperSize.A3,
+                        "B4" => PaperSize.B4,
+                        "B5" => PaperSize.B5,
+                        _ => PaperSize.A4
+                    },
                     Orientation = SelectedOrientation,
                     MarginTop = MarginTop,
                     MarginBottom = MarginBottom,
@@ -276,7 +531,14 @@ namespace QuizForge.App.ViewModels
                 // 更新现有模板
                 SelectedTemplate.Name = TemplateName;
                 SelectedTemplate.Description = TemplateDescription;
-                SelectedTemplate.PaperSize = SelectedPaperSize;
+                SelectedTemplate.PaperSize = SelectedPaperSize switch
+                    {
+                        "A4" => PaperSize.A4,
+                        "A3" => PaperSize.A3,
+                        "B4" => PaperSize.B4,
+                        "B5" => PaperSize.B5,
+                        _ => PaperSize.A4
+                    };
                 SelectedTemplate.Orientation = SelectedOrientation;
                 SelectedTemplate.MarginTop = MarginTop;
                 SelectedTemplate.MarginBottom = MarginBottom;
@@ -362,8 +624,15 @@ namespace QuizForge.App.ViewModels
             {
                 TemplateName = SelectedTemplate.Name;
                 TemplateDescription = SelectedTemplate.Description;
-                SelectedPaperSize = SelectedTemplate.PaperSize ?? "A4";
-                SelectedOrientation = SelectedTemplate.Orientation ?? "纵向";
+                SelectedPaperSize = SelectedTemplate.PaperSize switch
+                    {
+                        PaperSize.A4 => "A4",
+                        PaperSize.A3 => "A3",
+                        PaperSize.B4 => "B4",
+                        PaperSize.B5 => "B5",
+                        _ => "A4"
+                    };
+                SelectedOrientation = SelectedTemplate.Orientation;
                 MarginTop = SelectedTemplate.MarginTop;
                 MarginBottom = SelectedTemplate.MarginBottom;
                 MarginLeft = SelectedTemplate.MarginLeft;
@@ -586,7 +855,7 @@ namespace QuizForge.App.ViewModels
         try
         {
             // 获取顶层窗口用于文件对话框
-            var topLevel = TopLevel.GetTopLevel(Avalonia.Application.Current?.ApplicationLifetime?.GetMainWindow());
+            var topLevel = TopLevel.GetTopLevel((Avalonia.Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.MainWindow);
             if (topLevel == null)
             {
                 Status = "无法获取窗口句柄";
@@ -655,7 +924,7 @@ namespace QuizForge.App.ViewModels
         try
         {
             // 获取顶层窗口用于文件对话框
-            var topLevel = TopLevel.GetTopLevel(Avalonia.Application.Current?.ApplicationLifetime?.GetMainWindow());
+            var topLevel = TopLevel.GetTopLevel((Avalonia.Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.MainWindow);
             if (topLevel == null)
             {
                 Status = "无法获取窗口句柄";

@@ -545,6 +545,59 @@ public class PrintPreviewService : IPrintPreviewService
     }
 
     /// <summary>
+    /// 生成缩略图预览（重载方法）
+    /// </summary>
+    /// <param name="pdfPath">PDF文件路径</param>
+    /// <param name="pageNumber">页码（从1开始）</param>
+    /// <param name="width">缩略图宽度</param>
+    /// <param name="height">缩略图高度</param>
+    /// <returns>缩略图图像数据</returns>
+    public async Task<byte[]> GenerateThumbnailPreviewAsync(string pdfPath, int pageNumber = 1, int width = 200, int height = 200)
+    {
+        try
+        {
+            if (!File.Exists(pdfPath))
+            {
+                _logger.LogError("PDF文件不存在: {PdfPath}", pdfPath);
+                return Array.Empty<byte>();
+            }
+
+            if (pageNumber < 1)
+            {
+                _logger.LogError("页码必须大于0: {PageNumber}", pageNumber);
+                return Array.Empty<byte>();
+            }
+
+            if (width < 50 || width > 500)
+            {
+                width = Math.Clamp(width, 50, 500);
+                _logger.LogWarning("缩略图宽度超出范围，已调整为: {Width}", width);
+            }
+
+            if (height < 50 || height > 500)
+            {
+                height = Math.Clamp(height, 50, 500);
+                _logger.LogWarning("缩略图高度超出范围，已调整为: {Height}", height);
+            }
+
+            // 生成预览图像
+            var previewImage = await GeneratePreviewImageAsync(pdfPath, pageNumber, width, height);
+            
+            if (previewImage.Length == 0)
+            {
+                return Array.Empty<byte>();
+            }
+
+            return previewImage;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "生成PDF缩略图预览失败: {PdfPath}, 页码: {PageNumber}", pdfPath, pageNumber);
+            return Array.Empty<byte>();
+        }
+    }
+
+    /// <summary>
     /// 获取预览配置
     /// </summary>
     /// <returns>预览配置</returns>
@@ -846,6 +899,48 @@ public class PrintPreviewService : IPrintPreviewService
         catch (Exception ex)
         {
             _logger.LogError(ex, "添加密封线标记失败");
+            return imageData;
+        }
+    }
+    
+    /// <summary>
+    /// 同时调整预览图像亮度和对比度
+    /// </summary>
+    /// <param name="imageData">原始图像数据</param>
+    /// <param name="brightness">亮度调整值（-100到100）</param>
+    /// <param name="contrast">对比度调整值（-100到100）</param>
+    /// <returns>调整后的图像数据</returns>
+    public async Task<byte[]> AdjustBrightnessContrastAsync(byte[] imageData, int brightness, int contrast)
+    {
+        try
+        {
+            if (imageData.Length == 0)
+            {
+                return Array.Empty<byte>();
+            }
+
+            brightness = Math.Clamp(brightness, -100, 100);
+            contrast = Math.Clamp(contrast, -100, 100);
+
+            using var inputStream = new MemoryStream(imageData);
+            using var image = await ImageSharpImage.LoadAsync(inputStream);
+            
+            // 将亮度值从-100到100映射到ImageSharp的亮度参数
+            var brightnessParameter = (brightness + 100) / 100f;
+            
+            // 将对比度值从-100到100映射到ImageSharp的对比度参数
+            var contrastParameter = (contrast + 100) / 100f;
+            
+            image.Mutate(ctx => ctx.Brightness(brightnessParameter).Contrast(contrastParameter));
+            
+            using var outputStream = new MemoryStream();
+            await image.SaveAsPngAsync(outputStream);
+            
+            return outputStream.ToArray();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "调整预览图像亮度和对比度失败");
             return imageData;
         }
     }

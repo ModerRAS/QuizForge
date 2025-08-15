@@ -4,6 +4,7 @@ using QuizForge.Models;
 using QuizForge.Models.Interfaces;
 using System.Collections.ObjectModel;
 using System;
+using System.IO;
 using System.Threading.Tasks;
 using System.Linq;
 using Avalonia.Media.Imaging;
@@ -49,6 +50,9 @@ public partial class PrintPreviewViewModel : ObservableObject
     private PrintSettings _printSettings = new();
 
     [ObservableProperty]
+    private ExamPaper? _selectedExamPaper;
+
+    [ObservableProperty]
     private int _copies = 1;
 
     [ObservableProperty]
@@ -73,13 +77,13 @@ public partial class PrintPreviewViewModel : ObservableObject
     private int _lastPageToPrint = 1;
 
     [ObservableProperty]
-    private PrintDuplexMode _duplexMode = PrintDuplexMode.Simplex;
+    private QuizForge.Models.Interfaces.PrintDuplexMode _duplexMode = QuizForge.Models.Interfaces.PrintDuplexMode.Simplex;
 
     [ObservableProperty]
-    private PrintOrientation _orientation = PrintOrientation.Portrait;
+    private QuizForge.Models.Interfaces.PrintOrientation _orientation = QuizForge.Models.Interfaces.PrintOrientation.Portrait;
 
     [ObservableProperty]
-    private PrintQuality _quality = PrintQuality.Normal;
+    private QuizForge.Models.Interfaces.PrintQuality _quality = QuizForge.Models.Interfaces.PrintQuality.Normal;
 
     [ObservableProperty]
     private bool _printToPdf = false;
@@ -495,60 +499,3 @@ public class ThumbnailItem
     public Bitmap? Image { get; set; }
 }
 
-/// <summary>
-/// 打印双面模式枚举
-/// </summary>
-public enum PrintDuplexMode
-{
-    /// <summary>
-    /// 单面打印
-    /// </summary>
-    Simplex,
-    
-    /// <summary>
-    /// 水平双面打印
-    /// </summary>
-    Horizontal,
-    
-    /// <summary>
-    /// 垂直双面打印
-    /// </summary>
-    Vertical
-}
-
-/// <summary>
-/// 打印方向枚举
-/// </summary>
-public enum PrintOrientation
-{
-    /// <summary>
-    /// 纵向
-    /// </summary>
-    Portrait,
-    
-    /// <summary>
-    /// 横向
-    /// </summary>
-    Landscape
-}
-
-/// <summary>
-/// 打印质量枚举
-/// </summary>
-public enum PrintQuality
-{
-    /// <summary>
-    /// 草稿质量
-    /// </summary>
-    Draft,
-    
-    /// <summary>
-    /// 普通质量
-    /// </summary>
-    Normal,
-    
-    /// <summary>
-    /// 高质量
-    /// </summary>
-    High
-}

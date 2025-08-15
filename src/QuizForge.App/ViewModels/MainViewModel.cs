@@ -92,8 +92,8 @@ namespace QuizForge.App.ViewModels
         {
             // 这里应该从配置文件或数据库加载最近使用的文件
             // 简化实现：使用硬编码的示例文件
-            RecentFiles.Add(new RecentFile { Name = "数学题库.md", Path = "C:\\QuizForge\\数学题库.md" });
-            RecentFiles.Add(new RecentFile { Name = "英语试卷模板.tex", Path = "C:\\QuizForge\\英语试卷模板.tex" });
+            RecentFiles.Add(new RecentFile(this) { Name = "数学题库.md", Path = "C:\\QuizForge\\数学题库.md" });
+            RecentFiles.Add(new RecentFile(this) { Name = "英语试卷模板.tex", Path = "C:\\QuizForge\\英语试卷模板.tex" });
         }
         catch (Exception ex)
         {
@@ -110,7 +110,7 @@ namespace QuizForge.App.ViewModels
             Status = "正在创建新题库...";
             
             // 获取顶层窗口用于文件对话框
-            var topLevel = TopLevel.GetTopLevel(Avalonia.Application.Current?.ApplicationLifetime?.GetMainWindow());
+            var topLevel = TopLevel.GetTopLevel((Avalonia.Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.MainWindow);
             if (topLevel == null)
             {
                 Status = "无法获取窗口句柄";
@@ -183,7 +183,7 @@ namespace QuizForge.App.ViewModels
             Status = "正在导入题库...";
             
             // 获取顶层窗口用于文件对话框
-            var topLevel = TopLevel.GetTopLevel(Avalonia.Application.Current?.ApplicationLifetime?.GetMainWindow());
+            var topLevel = TopLevel.GetTopLevel((Avalonia.Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.MainWindow);
             if (topLevel == null)
             {
                 Status = "无法获取窗口句柄";
@@ -226,7 +226,7 @@ namespace QuizForge.App.ViewModels
                 var filePath = file.Path.AbsolutePath;
                 
                 // 使用QuestionService导入题库
-                var questionBank = await _questionService.ImportQuestionBankAsync(filePath);
+                var questionBank = await _questionService.ImportQuestionBankAsync(filePath, GetFileFormat(filePath));
                 
                 if (questionBank != null)
                 {
@@ -302,7 +302,7 @@ namespace QuizForge.App.ViewModels
             Status = "正在另存为...";
             
             // 获取顶层窗口用于文件对话框
-            var topLevel = TopLevel.GetTopLevel(Avalonia.Application.Current?.ApplicationLifetime?.GetMainWindow());
+            var topLevel = TopLevel.GetTopLevel((Avalonia.Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.MainWindow);
             if (topLevel == null)
             {
                 Status = "无法获取窗口句柄";
@@ -424,7 +424,7 @@ namespace QuizForge.App.ViewModels
             _timer.Dispose();
             
             // 退出应用程序
-            Avalonia.Application.Current?.ApplicationLifetime?.TryShutdown();
+            (Avalonia.Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.Shutdown();
         }
         catch (Exception ex)
         {
@@ -511,7 +511,7 @@ namespace QuizForge.App.ViewModels
             Status = "正在剪切...";
             
             // 获取当前选中的文本或内容
-            var clipboard = TopLevel.GetTopLevel(Avalonia.Application.Current?.ApplicationLifetime?.GetMainWindow())?.Clipboard;
+            var clipboard = TopLevel.GetTopLevel((Avalonia.Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.MainWindow)?.Clipboard;
             if (clipboard != null)
             {
                 // 这里需要根据当前视图获取选中的内容
@@ -552,7 +552,7 @@ namespace QuizForge.App.ViewModels
             Status = "正在复制...";
             
             // 获取当前选中的文本或内容
-            var clipboard = TopLevel.GetTopLevel(Avalonia.Application.Current?.ApplicationLifetime?.GetMainWindow())?.Clipboard;
+            var clipboard = TopLevel.GetTopLevel((Avalonia.Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.MainWindow)?.Clipboard;
             if (clipboard != null)
             {
                 // 这里需要根据当前视图获取选中的内容
@@ -593,7 +593,7 @@ namespace QuizForge.App.ViewModels
             Status = "正在粘贴...";
             
             // 获取剪贴板内容
-            var clipboard = TopLevel.GetTopLevel(Avalonia.Application.Current?.ApplicationLifetime?.GetMainWindow())?.Clipboard;
+            var clipboard = TopLevel.GetTopLevel((Avalonia.Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.MainWindow)?.Clipboard;
             if (clipboard != null)
             {
                 // 这里需要根据当前视图粘贴内容
@@ -775,7 +775,7 @@ namespace QuizForge.App.ViewModels
             Status = "正在导出试卷...";
             
             // 获取顶层窗口用于文件对话框
-            var topLevel = TopLevel.GetTopLevel(Avalonia.Application.Current?.ApplicationLifetime?.GetMainWindow());
+            var topLevel = TopLevel.GetTopLevel((Avalonia.Application.Current?.ApplicationLifetime as Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime)?.MainWindow);
             if (topLevel == null)
             {
                 Status = "无法获取窗口句柄";
@@ -815,15 +815,36 @@ namespace QuizForge.App.ViewModels
                 
                 if (fileExtension == ".pdf")
                 {
-                    success = await _exportService.ExportToPdfAsync(filePath);
+                    var pdfConfig = new ExportConfiguration 
+                    { 
+                        OutputPath = filePath, 
+                        Format = ExportFormat.PDF,
+                        FileName = System.IO.Path.GetFileName(filePath)
+                    };
+                    var result = await _exportService.ExportToPdfAsync("", pdfConfig);
+                    success = !string.IsNullOrEmpty(result);
                 }
                 else if (fileExtension == ".docx")
                 {
-                    success = await _exportService.ExportToWordAsync(filePath);
+                    var wordConfig = new ExportConfiguration 
+                    { 
+                        OutputPath = filePath, 
+                        Format = ExportFormat.Word,
+                        FileName = System.IO.Path.GetFileName(filePath)
+                    };
+                    var result = await _exportService.ExportToWordAsync("", wordConfig);
+                    success = !string.IsNullOrEmpty(result);
                 }
                 else if (fileExtension == ".tex")
                 {
-                    success = await _exportService.ExportToLaTeXAsync(filePath);
+                    var latexConfig = new ExportConfiguration 
+                    { 
+                        OutputPath = filePath, 
+                        Format = ExportFormat.LaTeX,
+                        FileName = System.IO.Path.GetFileName(filePath)
+                    };
+                    var result = await _exportService.ExportToLaTeXAsync("", latexConfig);
+                    success = !string.IsNullOrEmpty(result);
                 }
                 
                 if (success)
@@ -866,7 +887,7 @@ namespace QuizForge.App.ViewModels
 
             // 这里应该创建设置视图并添加到窗口
             // 简化实现：显示一个简单的设置对话框
-            var result = await ShowMessageDialog("设置", "设置功能正在开发中...");
+            await ShowMessageDialog("设置", "设置功能正在开发中...");
             
             Status = "设置已打开";
         }
@@ -1018,7 +1039,7 @@ QuizForge是一个基于.NET的试卷生成系统，旨在为教育机构、教�
         }
 
         // 添加到列表开头
-        RecentFiles.Insert(0, new RecentFile { Name = name, Path = path });
+        RecentFiles.Insert(0, new RecentFile(this) { Name = name, Path = path });
 
         // 保持最近文件列表不超过10个
         while (RecentFiles.Count > 10)
@@ -1036,16 +1057,18 @@ QuizForge是一个基于.NET的试卷生成系统，旨在为教育机构、教�
 
     private async Task<bool?> ShowConfirmDialog(string title, string message)
     {
-        // 简化实现：使用消息框模拟确认对话框
-        // 在实际应用中，应该使用自定义的确认对话框
-        var result = await ShowMessageDialog(title, message + "\n\n点击确定继续，取消则中止操作。");
-        return result; // 简化实现，总是返回true
+        // 简化实现：使用控制台输出模拟确认对话框
+        // 原本实现：应该使用自定义的确认对话框
+        // 简化实现：总是返回true
+        Console.WriteLine($"{title}: {message}");
+        await Task.CompletedTask;
+        return true;
     }
 
     private async Task ShowMessageDialog(string title, string message)
     {
         // 简化实现：使用控制台输出模拟消息对话框
-        // 在实际应用中，应该使用自定义的消息对话框
+        // 原本实现：应该使用自定义的消息对话框
         Console.WriteLine($"{title}: {message}");
         await Task.CompletedTask;
     }
@@ -1055,11 +1078,18 @@ QuizForge是一个基于.NET的试卷生成系统，旨在为教育机构、教�
     /// </summary>
     public partial class RecentFile : ObservableObject
     {
+        private readonly MainViewModel _mainViewModel;
+        
         [ObservableProperty]
         private string _name = string.Empty;
 
         [ObservableProperty]
         private string _path = string.Empty;
+
+        public RecentFile(MainViewModel mainViewModel)
+        {
+            _mainViewModel = mainViewModel;
+        }
 
         [RelayCommand]
         private async Task Open()
@@ -1069,7 +1099,7 @@ QuizForge是一个基于.NET的试卷生成系统，旨在为教育机构、教�
                 // 检查文件是否存在
                 if (!System.IO.File.Exists(Path))
                 {
-                    await ShowMessageDialog("错误", $"文件不存在：{Path}");
+                    Console.WriteLine($"错误：文件不存在：{Path}");
                     return;
                 }
 
@@ -1079,59 +1109,51 @@ QuizForge是一个基于.NET的试卷生成系统，旨在为教育机构、教�
                 if (extension == ".md" || extension == ".xlsx" || extension == ".xls" || extension == ".json" || extension == ".xml")
                 {
                     // 导入题库文件
-                    var questionBank = await _questionService.ImportQuestionBankAsync(Path);
+                    var questionBank = await _mainViewModel._questionService.ImportQuestionBankAsync(Path, QuestionBankFormat.Markdown);
                     if (questionBank != null)
                     {
                         // 切换到题库管理视图
-                        var mainViewModel = this as MainViewModel;
-                        if (mainViewModel != null)
+                        _mainViewModel.ShowQuestionBankView();
+                        
+                        // 通知QuestionBankViewModel加载题库
+                        if (_mainViewModel.CurrentView is QuestionBankViewModel questionBankViewModel)
                         {
-                            mainViewModel.ShowQuestionBankView();
-                            
-                            // 通知QuestionBankViewModel加载题库
-                            if (mainViewModel.CurrentView is QuestionBankViewModel questionBankViewModel)
-                            {
-                                await questionBankViewModel.LoadQuestionBankAsync(questionBank);
-                            }
+                            await questionBankViewModel.LoadQuestionBankAsync(questionBank);
                         }
                     }
                     else
                     {
-                        await ShowMessageDialog("错误", "导入题库失败");
+                        Console.WriteLine("错误：导入题库失败");
                     }
                 }
                 else if (extension == ".tex")
                 {
                     // 打开模板文件
-                    var template = await _templateService.LoadTemplateAsync(Path);
+                    var template = await _mainViewModel._templateService.LoadTemplateAsync(Path);
                     if (template != null)
                     {
                         // 切换到模板管理视图
-                        var mainViewModel = this as MainViewModel;
-                        if (mainViewModel != null)
+                        _mainViewModel.ShowTemplateView();
+                        
+                        // 通知TemplateViewModel加载模板
+                        if (_mainViewModel.CurrentView is TemplateViewModel templateViewModel)
                         {
-                            mainViewModel.ShowTemplateView();
-                            
-                            // 通知TemplateViewModel加载模板
-                            if (mainViewModel.CurrentView is TemplateViewModel templateViewModel)
-                            {
-                                await templateViewModel.LoadTemplateAsync(template);
-                            }
+                            await templateViewModel.LoadTemplateAsync(template);
                         }
                     }
                     else
                     {
-                        await ShowMessageDialog("错误", "加载模板失败");
+                        Console.WriteLine("错误：加载模板失败");
                     }
                 }
                 else
                 {
-                    await ShowMessageDialog("错误", "不支持的文件类型");
+                    Console.WriteLine("错误：不支持的文件类型");
                 }
             }
             catch (Exception ex)
             {
-                await ShowMessageDialog("错误", $"打开文件失败：{ex.Message}");
+                Console.WriteLine($"错误：打开文件失败：{ex.Message}");
             }
         }
     }

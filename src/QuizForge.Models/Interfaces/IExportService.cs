@@ -184,6 +184,90 @@ public enum PageOrientation
 }
 
 /// <summary>
+/// 打印方向枚举
+/// </summary>
+public enum PrintOrientation
+{
+    /// <summary>
+    /// 纵向
+    /// </summary>
+    Portrait,
+    
+    /// <summary>
+    /// 横向
+    /// </summary>
+    Landscape
+}
+
+/// <summary>
+/// 双面打印模式枚举
+/// </summary>
+public enum PrintDuplexMode
+{
+    /// <summary>
+    /// 单面打印
+    /// </summary>
+    Simplex,
+    
+    /// <summary>
+    /// 水平双面打印
+    /// </summary>
+    Horizontal,
+    
+    /// <summary>
+    /// 垂直双面打印
+    /// </summary>
+    Vertical
+}
+
+/// <summary>
+/// 打印质量枚举
+/// </summary>
+public enum PrintQuality
+{
+    /// <summary>
+    /// 草稿质量
+    /// </summary>
+    Draft,
+    
+    /// <summary>
+    /// 普通质量
+    /// </summary>
+    Normal,
+    
+    /// <summary>
+    /// 高质量
+    /// </summary>
+    High
+}
+
+/// <summary>
+/// 打印边距
+/// </summary>
+public class PrintMargins
+{
+    /// <summary>
+    /// 左边距
+    /// </summary>
+    public int Left { get; set; } = 10;
+    
+    /// <summary>
+    /// 上边距
+    /// </summary>
+    public int Top { get; set; } = 10;
+    
+    /// <summary>
+    /// 右边距
+    /// </summary>
+    public int Right { get; set; } = 10;
+    
+    /// <summary>
+    /// 下边距
+    /// </summary>
+    public int Bottom { get; set; } = 10;
+}
+
+/// <summary>
 /// 打印设置
 /// </summary>
 public class PrintSettings
@@ -207,4 +291,39 @@ public class PrintSettings
     /// 打印范围
     /// </summary>
     public string PrintRange { get; set; } = "All";
+    
+    /// <summary>
+    /// 双面打印模式
+    /// </summary>
+    public PrintDuplexMode DuplexMode { get; set; } = PrintDuplexMode.Simplex;
+    
+    /// <summary>
+    /// 页面方向
+    /// </summary>
+    public PrintOrientation Orientation { get; set; } = PrintOrientation.Portrait;
+    
+    /// <summary>
+    /// 打印质量
+    /// </summary>
+    public PrintQuality Quality { get; set; } = PrintQuality.Normal;
+    
+    /// <summary>
+    /// 起始页码
+    /// </summary>
+    public int FirstPage { get; set; } = 1;
+    
+    /// <summary>
+    /// 结束页码
+    /// </summary>
+    public int LastPage { get; set; } = 1;
+    
+    /// <summary>
+    /// 纸张大小
+    /// </summary>
+    public PaperSize PaperSize { get; set; } = PaperSize.A4;
+    
+    /// <summary>
+    /// 页边距
+    /// </summary>
+    public PrintMargins Margins { get; set; } = new();
 }

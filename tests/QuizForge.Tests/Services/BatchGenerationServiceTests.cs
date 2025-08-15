@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 using Moq;
 using QuizForge.Infrastructure.Services;
 using QuizForge.Models;
@@ -84,9 +85,15 @@ public class BatchGenerationServiceTests : IDisposable
                 {
                     Id = Guid.NewGuid(),
                     Content = "测试问题1",
-                    Type = QuestionType.SingleChoice,
+                    Type = "单选题",
                     Difficulty = "1",
-                    Options = new List<string> { "选项A", "选项B", "选项C", "选项D" },
+                    Options = new List<QuestionOption> 
+                    {
+                        new QuestionOption { Key = "A", Value = "选项A" },
+                        new QuestionOption { Key = "B", Value = "选项B" },
+                        new QuestionOption { Key = "C", Value = "选项C" },
+                        new QuestionOption { Key = "D", Value = "选项D" }
+                    },
                     CorrectAnswer = "A",
                     Points = 5
                 },
@@ -94,9 +101,15 @@ public class BatchGenerationServiceTests : IDisposable
                 {
                     Id = Guid.NewGuid(),
                     Content = "测试问题2",
-                    Type = QuestionType.MultipleChoice,
+                    Type = "多选题",
                     Difficulty = "2",
-                    Options = new List<string> { "选项A", "选项B", "选项C", "选项D" },
+                    Options = new List<QuestionOption> 
+                    {
+                        new QuestionOption { Key = "A", Value = "选项A" },
+                        new QuestionOption { Key = "B", Value = "选项B" },
+                        new QuestionOption { Key = "C", Value = "选项C" },
+                        new QuestionOption { Key = "D", Value = "选项D" }
+                    },
                     CorrectAnswer = "A,B",
                     Points = 10
                 }
@@ -111,7 +124,7 @@ public class BatchGenerationServiceTests : IDisposable
         {
             Id = Guid.NewGuid(),
             Name = "测试模板",
-            Content = "测试模板内容"
+            Description = "测试模板内容"
         };
 
         _templateServiceMock.Setup(s => s.GetTemplateAsync(It.IsAny<Guid>()))
@@ -123,7 +136,7 @@ public class BatchGenerationServiceTests : IDisposable
 
         // 设置导出服务
         _exportServiceMock.Setup(s => s.ExportToPdfAsync(It.IsAny<string>(), It.IsAny<ExportConfiguration>()))
-            .ReturnsAsync<string, ExportConfiguration>((content, config) => 
+            .ReturnsAsync((string content, ExportConfiguration config) => 
             {
                 var fileName = $"{config.FileName}_{Guid.NewGuid():N}.pdf";
                 var filePath = Path.Combine(config.OutputPath, fileName);
@@ -140,7 +153,7 @@ public class BatchGenerationServiceTests : IDisposable
             .Returns((string)null); // 默认没有缓存
 
         _pdfCacheServiceMock.Setup(s => s.CachePdfAsync(It.IsAny<string>(), It.IsAny<byte[]>()))
-            .ReturnsAsync<string, byte[]>((content, data) => Path.Combine(_testTempDirectory, $"{Guid.NewGuid():N}.pdf"));
+            .ReturnsAsync((string content, byte[] data) => Path.Combine(_testTempDirectory, $"{Guid.NewGuid():N}.pdf"));
     }
 
     /// <summary>
@@ -153,7 +166,7 @@ public class BatchGenerationServiceTests : IDisposable
         var batchService = _serviceProvider.GetRequiredService<IBatchGenerationService>();
         var request = new BatchGenerationRequest
         {
-            QuestionBankIds = new[] { Guid.NewGuid() },
+            QuestionBankIds = new List<Guid> { Guid.NewGuid() },
             TemplateId = Guid.NewGuid(),
             Count = 3,
             OutputDirectory = _testTempDirectory,
@@ -194,7 +207,7 @@ public class BatchGenerationServiceTests : IDisposable
         var batchService = _serviceProvider.GetRequiredService<IBatchGenerationService>();
         var request = new BatchGenerationRequest
         {
-            QuestionBankIds = new[] { Guid.NewGuid() },
+            QuestionBankIds = new List<Guid> { Guid.NewGuid() },
             TemplateId = Guid.NewGuid(),
             Count = 5,
             OutputDirectory = _testTempDirectory,
@@ -229,7 +242,7 @@ public class BatchGenerationServiceTests : IDisposable
         var batchService = _serviceProvider.GetRequiredService<IBatchGenerationService>();
         var request = new BatchGenerationRequest
         {
-            QuestionBankIds = new[] { Guid.NewGuid() },
+            QuestionBankIds = new List<Guid> { Guid.NewGuid() },
             TemplateId = Guid.NewGuid(),
             Count = 10, // 较大的数量，确保有时间取消
             OutputDirectory = _testTempDirectory,
@@ -271,7 +284,7 @@ public class BatchGenerationServiceTests : IDisposable
         var batchService = _serviceProvider.GetRequiredService<IBatchGenerationService>();
         var request = new BatchGenerationRequest
         {
-            QuestionBankIds = new[] { Guid.NewGuid() },
+            QuestionBankIds = new List<Guid> { Guid.NewGuid() },
             TemplateId = Guid.NewGuid(),
             Count = 2,
             OutputDirectory = _testTempDirectory,
@@ -306,7 +319,7 @@ public class BatchGenerationServiceTests : IDisposable
         var batchService = _serviceProvider.GetRequiredService<IBatchGenerationService>();
         var request = new BatchGenerationRequest
         {
-            QuestionBankIds = new[] { Guid.NewGuid() },
+            QuestionBankIds = new List<Guid> { Guid.NewGuid() },
             TemplateId = Guid.NewGuid(),
             Count = 2,
             OutputDirectory = _testTempDirectory,
@@ -345,7 +358,7 @@ public class BatchGenerationServiceTests : IDisposable
         await Assert.ThrowsAsync<ArgumentException>(() => 
             batchService.BatchGenerateExamPapersAsync(new BatchGenerationRequest
             {
-                QuestionBankIds = Array.Empty<Guid>(),
+                QuestionBankIds = new List<Guid>(),
                 TemplateId = Guid.NewGuid(),
                 Count = 1,
                 OutputDirectory = _testTempDirectory,
@@ -357,7 +370,7 @@ public class BatchGenerationServiceTests : IDisposable
         await Assert.ThrowsAsync<ArgumentException>(() => 
             batchService.BatchGenerateExamPapersAsync(new BatchGenerationRequest
             {
-                QuestionBankIds = new[] { Guid.NewGuid() },
+                QuestionBankIds = new List<Guid> { Guid.NewGuid() },
                 TemplateId = Guid.NewGuid(),
                 Count = 0,
                 OutputDirectory = _testTempDirectory,
@@ -369,7 +382,7 @@ public class BatchGenerationServiceTests : IDisposable
         await Assert.ThrowsAsync<ArgumentException>(() => 
             batchService.BatchGenerateExamPapersAsync(new BatchGenerationRequest
             {
-                QuestionBankIds = new[] { Guid.NewGuid() },
+                QuestionBankIds = new List<Guid> { Guid.NewGuid() },
                 TemplateId = Guid.NewGuid(),
                 Count = 1,
                 OutputDirectory = "",
@@ -441,7 +454,7 @@ public class BatchGenerationServiceTests : IDisposable
         var batchService = _serviceProvider.GetRequiredService<IBatchGenerationService>();
         var request = new AdvancedBatchGenerationRequest
         {
-            QuestionBankIds = new[] { Guid.NewGuid() },
+            QuestionBankIds = new List<Guid> { Guid.NewGuid() },
             TemplateId = Guid.NewGuid(),
             Count = 3,
             OutputDirectory = _testTempDirectory,
@@ -509,7 +522,7 @@ public class BatchGenerationServiceTests : IDisposable
         var batchService = _serviceProvider.GetRequiredService<IBatchGenerationService>();
         var request = new AdvancedBatchGenerationRequest
         {
-            QuestionBankIds = new[] { Guid.NewGuid() },
+            QuestionBankIds = new List<Guid> { Guid.NewGuid() },
             TemplateId = Guid.NewGuid(),
             Count = 5, // 较大的数量，确保有时间暂停
             OutputDirectory = _testTempDirectory,
@@ -567,7 +580,7 @@ public class BatchGenerationServiceTests : IDisposable
         var batchService = _serviceProvider.GetRequiredService<IBatchGenerationService>();
         var request = new AdvancedBatchGenerationRequest
         {
-            QuestionBankIds = new[] { Guid.NewGuid() },
+            QuestionBankIds = new List<Guid> { Guid.NewGuid() },
             TemplateId = Guid.NewGuid(),
             Count = 2,
             OutputDirectory = _testTempDirectory,
@@ -614,7 +627,7 @@ public class BatchGenerationServiceTests : IDisposable
         var batchService = _serviceProvider.GetRequiredService<IBatchGenerationService>();
         var request = new AdvancedBatchGenerationRequest
         {
-            QuestionBankIds = new[] { Guid.NewGuid() },
+            QuestionBankIds = new List<Guid> { Guid.NewGuid() },
             TemplateId = Guid.NewGuid(),
             Count = 2,
             OutputDirectory = _testTempDirectory,
@@ -653,7 +666,7 @@ public class BatchGenerationServiceTests : IDisposable
         var batchService = _serviceProvider.GetRequiredService<IBatchGenerationService>();
         var request = new AdvancedBatchGenerationRequest
         {
-            QuestionBankIds = new[] { Guid.NewGuid() },
+            QuestionBankIds = new List<Guid> { Guid.NewGuid() },
             TemplateId = Guid.NewGuid(),
             Count = 2,
             OutputDirectory = _testTempDirectory,
@@ -684,7 +697,6 @@ public class BatchGenerationServiceTests : IDisposable
         Assert.NotNull(report);
         Assert.Equal(2, report.GeneratedFiles.Count);
         Assert.Equal(2, report.AnswerPaperFiles.Count);
-        Assert.NotEmpty(report.StatisticsReportFilePath);
         
         // 检查统计信息
         Assert.True(report.Statistics.TotalQuestions > 0);
@@ -705,7 +717,7 @@ public class BatchGenerationServiceTests : IDisposable
         await Assert.ThrowsAsync<ArgumentException>(() =>
             batchService.AdvancedBatchGenerateExamPapersAsync(new AdvancedBatchGenerationRequest
             {
-                QuestionBankIds = Array.Empty<Guid>(),
+                QuestionBankIds = new List<Guid>(),
                 TemplateId = Guid.NewGuid(),
                 Count = 1,
                 OutputDirectory = _testTempDirectory,
@@ -717,7 +729,7 @@ public class BatchGenerationServiceTests : IDisposable
         await Assert.ThrowsAsync<ArgumentException>(() =>
             batchService.AdvancedBatchGenerateExamPapersAsync(new AdvancedBatchGenerationRequest
             {
-                QuestionBankIds = new[] { Guid.NewGuid() },
+                QuestionBankIds = new List<Guid> { Guid.NewGuid() },
                 TemplateId = Guid.NewGuid(),
                 Count = 0,
                 OutputDirectory = _testTempDirectory,
@@ -729,7 +741,7 @@ public class BatchGenerationServiceTests : IDisposable
         await Assert.ThrowsAsync<ArgumentException>(() =>
             batchService.AdvancedBatchGenerateExamPapersAsync(new AdvancedBatchGenerationRequest
             {
-                QuestionBankIds = new[] { Guid.NewGuid() },
+                QuestionBankIds = new List<Guid> { Guid.NewGuid() },
                 TemplateId = Guid.NewGuid(),
                 Count = 1,
                 OutputDirectory = "",

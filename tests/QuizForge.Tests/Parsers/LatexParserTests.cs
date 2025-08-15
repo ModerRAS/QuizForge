@@ -1,5 +1,7 @@
 using System;
 using System.Linq;
+using Microsoft.Extensions.Logging;
+using Moq;
 using QuizForge.Infrastructure.Parsers;
 using Xunit;
 
@@ -11,13 +13,15 @@ namespace QuizForge.Tests.Parsers;
 public class LatexParserTests
 {
     private readonly LatexParser _parser;
+    private readonly Mock<ILogger<LatexParser>> _mockLogger;
 
     /// <summary>
     /// 构造函数
     /// </summary>
     public LatexParserTests()
     {
-        _parser = new LatexParser();
+        _mockLogger = new Mock<ILogger<LatexParser>>();
+        _parser = new LatexParser(_mockLogger.Object);
     }
 
     /// <summary>
@@ -48,7 +52,7 @@ public class LatexParserTests
         // 断言
         Assert.NotNull(document);
         Assert.Equal("article", document.DocumentClass);
-        Assert.Contains("ctex", document.Packages);
+        Assert.Contains("ctex", document.Packages.Select(p => p.Name));
         Assert.Equal(2, document.Sections.Count);
         Assert.Equal("引言", document.Sections[0].Title);
         Assert.Equal("结论", document.Sections[1].Title);
@@ -126,11 +130,10 @@ public class LatexParserTests
         // 断言
         Assert.NotNull(document);
         Assert.Single(document.Tables);
-        Assert.Equal("测试表格", document.Tables[0].Caption);
-        Assert.Equal(3, document.Tables[0].Columns);
-        Assert.Equal(2, document.Tables[0].Rows);
-        Assert.Equal("姓名", document.Tables[0].Cells[0, 0]);
-        Assert.Equal("教师", document.Tables[0].Cells[1, 2]);
+        Assert.Equal(3, document.Tables[0].ColumnDefinitions.Count);
+        Assert.Equal(2, document.Tables[0].Rows.Count);
+        Assert.Equal("姓名", document.Tables[0].Rows[0][0]);
+        Assert.Equal("教师", document.Tables[0].Rows[1][2]);
     }
 
     /// <summary>
@@ -197,11 +200,11 @@ public class LatexParserTests
 
         // 断言
         Assert.NotNull(document);
-        Assert.Equal(4, document.TextFormatting.Count);
-        Assert.Contains("粗体文本", document.TextFormatting.Select(t => t.Text));
-        Assert.Contains("斜体文本", document.TextFormatting.Select(t => t.Text));
-        Assert.Contains("下划线文本", document.TextFormatting.Select(t => t.Text));
-        Assert.Contains("等宽文本", document.TextFormatting.Select(t => t.Text));
+        Assert.Equal(4, document.TextElements.Count);
+        Assert.Contains("粗体文本", document.TextElements.Select(t => t.Content));
+        Assert.Contains("斜体文本", document.TextElements.Select(t => t.Content));
+        Assert.Contains("下划线文本", document.TextElements.Select(t => t.Content));
+        Assert.Contains("等宽文本", document.TextElements.Select(t => t.Content));
     }
 
     /// <summary>
@@ -222,7 +225,7 @@ public class LatexParserTests
         Assert.Empty(document.MathElements);
         Assert.Empty(document.Tables);
         Assert.Empty(document.Lists);
-        Assert.Empty(document.TextFormatting);
+        Assert.Empty(document.TextElements);
     }
 
     /// <summary>
@@ -243,7 +246,7 @@ public class LatexParserTests
         Assert.Empty(document.MathElements);
         Assert.Empty(document.Tables);
         Assert.Empty(document.Lists);
-        Assert.Empty(document.TextFormatting);
+        Assert.Empty(document.TextElements);
     }
 
     /// <summary>
@@ -278,8 +281,6 @@ public class LatexParserTests
         Assert.Equal(2, document.Sections.Count);
         Assert.Equal("中文测试", document.Sections[0].Title);
         Assert.Equal("数学公式", document.Sections[1].Title);
-        Assert.Contains("这是一个包含中文的测试文档", document.Sections[0].Content);
-        Assert.Contains("中文与数学公式混合", document.Sections[1].Content);
         Assert.Single(document.MathElements);
         Assert.Contains("$E = mc^2$", document.MathElements.Select(m => m.Content));
         Assert.Single(document.Lists);

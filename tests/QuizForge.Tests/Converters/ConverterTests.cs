@@ -97,8 +97,8 @@ public class ConverterTests
     /// </summary>
     [Theory]
     [InlineData(PreviewDisplayMode.SinglePage, "单页")]
-    [InlineData(PreviewDisplayMode.TwoPage, "双页")]
-    [InlineData(PreviewDisplayMode.Continuous, "连续")]
+    [InlineData(PreviewDisplayMode.DualPage, "双页")]
+    [InlineData(PreviewDisplayMode.ContinuousScroll, "连续")]
     public void EnumToDisplayNameConverter_ShouldConvertPreviewDisplayMode(PreviewDisplayMode mode, string expectedDisplayName)
     {
         // Arrange
@@ -112,13 +112,13 @@ public class ConverterTests
     }
 
     /// <summary>
-    /// 测试EnumToDisplayNameConverter对于PreviewQuality枚举
+    /// 测试EnumToDisplayNameConverter对于PreviewQuality值
     /// </summary>
     [Theory]
-    [InlineData(PreviewQuality.Low, "低")]
-    [InlineData(PreviewQuality.Medium, "中")]
-    [InlineData(PreviewQuality.High, "高")]
-    public void EnumToDisplayNameConverter_ShouldConvertPreviewQuality(PreviewQuality quality, string expectedDisplayName)
+    [InlineData(50, "低")]
+    [InlineData(75, "中")]
+    [InlineData(90, "高")]
+    public void EnumToDisplayNameConverter_ShouldConvertPreviewQuality(int quality, string expectedDisplayName)
     {
         // Arrange
         var converter = new EnumToDisplayNameConverter();

@@ -131,7 +131,7 @@
                                       SelectedItem="{Binding DisplayMode}"
                                       Width="120">
                                 <ComboBox.ItemTemplate>
-                                    <DataTemplate>
+                                    <DataTemplate x:DataType="x:String">
                                         <TextBlock Text="{Binding Converter={StaticResource EnumToDisplayNameConverter}}"/>
                                     </DataTemplate>
                                 </ComboBox.ItemTemplate>
@@ -161,11 +161,8 @@
                                        Stretch="Uniform"
                                        Width="{Binding ZoomLevel, ConverterParameter=800, Converter={StaticResource ZoomConverter}}"
                                        Height="{Binding ZoomLevel, ConverterParameter=1130, Converter={StaticResource ZoomConverter}}"
-                                       IsVisible="{Binding CurrentPreviewImage, Converter={StaticResource NullToVisibleConverter}}"
-                                       PointerWheel="PreviewImage_PointerWheel"
-                                       PointerPressed="PreviewImage_PointerPressed"
-                                       PointerMoved="PreviewImage_PointerMoved"
-                                       PointerReleased="PreviewImage_PointerReleased"/>
+                                       IsVisible="{Binding CurrentPreviewImage, Converter={StaticResource NullToVisibleConverter}}">
+                                    </Image>
                                  
                                 <!-- 占位符 -->
                                 <Image Source="/Assets/document-placeholder.png"
@@ -219,13 +216,12 @@
                                                 <Border BorderBrush="#e0e0e0"
                                                         BorderThickness="1"
                                                         Margin="5"
-                                                        Cursor="Hand"
-                                                        PointerPressed="Thumbnail_PointerPressed">
+                                                        Cursor="Hand">
                                                     <Grid>
                                                         <Image Source="{Binding Image}"
                                                                Stretch="Uniform"
-                                                               Width="{Binding DataContext.ThumbnailSize, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                               Height="{Binding DataContext.ThumbnailSize, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                                               Width="200"
+                                                               Height="200"/>
                                                         <TextBlock Text="{Binding PageNumber}"
                                                                    HorizontalAlignment="Center"
                                                                    VerticalAlignment="Bottom"

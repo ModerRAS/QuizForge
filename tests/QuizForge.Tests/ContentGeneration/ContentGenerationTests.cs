@@ -17,6 +17,7 @@ public class ContentGenerationTests
     private readonly Mock<ITemplateRepository> _mockTemplateRepository;
     private readonly ContentGenerator _contentGenerator;
     private readonly DynamicContentInserter _dynamicContentInserter;
+    private readonly LaTeXTemplateProcessor _latexTemplateProcessor;
     private readonly ExamPaperGenerator _examPaperGenerator;
 
     public ContentGenerationTests()
@@ -26,12 +27,14 @@ public class ContentGenerationTests
         _mockTemplateRepository = new Mock<ITemplateRepository>();
         _contentGenerator = new ContentGenerator();
         _dynamicContentInserter = new DynamicContentInserter();
+        _latexTemplateProcessor = new LaTeXTemplateProcessor();
         _examPaperGenerator = new ExamPaperGenerator(
             _mockQuestionProcessor.Object,
             _mockQuestionRepository.Object,
             _mockTemplateRepository.Object,
             _contentGenerator,
-            _dynamicContentInserter);
+            _dynamicContentInserter,
+            _latexTemplateProcessor);
     }
 
     /// <summary>

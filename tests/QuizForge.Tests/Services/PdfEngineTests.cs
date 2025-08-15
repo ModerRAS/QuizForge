@@ -8,6 +8,8 @@ using Moq;
 using QuizForge.Infrastructure.Engines;
 using QuizForge.Infrastructure.Exceptions;
 using QuizForge.Infrastructure.Services;
+using QuizForge.Infrastructure.Parsers;
+using QuizForge.Infrastructure.Renderers;
 using QuizForge.Models.Interfaces;
 using Xunit;
 

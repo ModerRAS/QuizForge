@@ -4,6 +4,8 @@ using QuizForge.Models;
 using QuizForge.Models.Interfaces;
 using System.Collections.ObjectModel;
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using System.Linq;
 using Avalonia.Media.Imaging;
@@ -25,6 +27,9 @@ namespace QuizForge.App.ViewModels
 
     [ObservableProperty]
     private ExamPaper? _selectedExamPaper;
+
+    [ObservableProperty]
+    private string _pdfPath = string.Empty;
 
     [ObservableProperty]
     private string _status = "就绪";
@@ -73,6 +78,12 @@ namespace QuizForge.App.ViewModels
 
     [ObservableProperty]
     private bool _isHighQualityMode = false;
+
+    [ObservableProperty]
+    private int _previewWidth = 800;
+
+    [ObservableProperty]
+    private int _previewHeight = 600;
 
     [ObservableProperty]
     private bool _isMouseWheelZoomEnabled = true;
@@ -625,25 +636,35 @@ namespace QuizForge.App.ViewModels
             
             if (IsHighQualityMode)
             {
-                CurrentPreviewImage = await _printPreviewService.GenerateHighQualityPreviewAsync(
-                    SelectedExamPaper,
+                var imageData = await _printPreviewService.GenerateHighQualityPreviewAsync(
+                    PdfPath,
                     CurrentPage,
+                    (int)(PreviewWidth * ZoomLevel / 100),
+                    (int)(PreviewHeight * ZoomLevel / 100),
                     PreviewQuality);
+                using var stream = new MemoryStream(imageData);
+                CurrentPreviewImage = Bitmap.DecodeToWidth(stream, PreviewWidth);
             }
             else if (ShowSealLine)
             {
-                CurrentPreviewImage = await _printPreviewService.GeneratePreviewWithSealLineAsync(
-                    SelectedExamPaper,
+                var imageData = await _printPreviewService.GeneratePreviewWithSealLineAsync(
+                    PdfPath,
                     CurrentPage,
-                    PreviewQuality);
+                    (int)(PreviewWidth * ZoomLevel / 100),
+                    (int)(PreviewHeight * ZoomLevel / 100),
+                    ShowSealLine);
+                using var stream = new MemoryStream(imageData);
+                CurrentPreviewImage = Bitmap.DecodeToWidth(stream, PreviewWidth);
             }
             else
             {
-                CurrentPreviewImage = await _printPreviewService.GeneratePreviewRangeAsync(
-                    SelectedExamPaper,
+                var imageData = await _printPreviewService.GeneratePreviewImageAsync(
+                    PdfPath,
                     CurrentPage,
-                    1,
-                    PreviewQuality);
+                    (int)(PreviewWidth * ZoomLevel / 100),
+                    (int)(PreviewHeight * ZoomLevel / 100));
+                using var stream = new MemoryStream(imageData);
+                CurrentPreviewImage = Bitmap.DecodeToWidth(stream, PreviewWidth);
             }
             
             Status = $"预览加载完成 - 第 {CurrentPage} 页";
@@ -666,10 +687,20 @@ namespace QuizForge.App.ViewModels
 
         try
         {
-            CurrentPreviewImage = await _printPreviewService.AdjustBrightnessContrastAsync(
-                CurrentPreviewImage,
+            // 将Bitmap转换为byte[]
+            using var memoryStream = new MemoryStream();
+            CurrentPreviewImage.Save(memoryStream);
+            var imageData = memoryStream.ToArray();
+            
+            // 调整亮度和对比度
+            var adjustedImageData = await _printPreviewService.AdjustBrightnessContrastAsync(
+                imageData,
                 Brightness,
                 Contrast);
+            
+            // 将byte[]转换回Bitmap
+            using var adjustedStream = new MemoryStream(adjustedImageData);
+            CurrentPreviewImage = Bitmap.DecodeToWidth(adjustedStream, PreviewWidth);
         }
         catch (Exception ex)
         {
@@ -689,10 +720,20 @@ namespace QuizForge.App.ViewModels
 
         try
         {
-            CurrentPreviewImage = await _printPreviewService.AdjustBrightnessContrastAsync(
-                CurrentPreviewImage,
+            // 将Bitmap转换为byte[]
+            using var memoryStream = new MemoryStream();
+            CurrentPreviewImage.Save(memoryStream);
+            var imageData = memoryStream.ToArray();
+            
+            // 调整亮度和对比度
+            var adjustedImageData = await _printPreviewService.AdjustBrightnessContrastAsync(
+                imageData,
                 Brightness,
                 Contrast);
+            
+            // 将byte[]转换回Bitmap
+            using var adjustedStream = new MemoryStream(adjustedImageData);
+            CurrentPreviewImage = Bitmap.DecodeToWidth(adjustedStream, PreviewWidth);
         }
         catch (Exception ex)
         {
@@ -746,17 +787,26 @@ namespace QuizForge.App.ViewModels
         {
             Status = "正在加载缩略图...";
 
-            var thumbnails = await _printPreviewService.GenerateThumbnailPreviewAsync(
-                SelectedExamPaper,
-                ThumbnailSize,
-                PreviewQuality);
+            var thumbnails = new List<byte[]>();
+            for (int i = 1; i <= TotalPages; i++)
+            {
+                var thumbnail = await _printPreviewService.GenerateThumbnailPreviewAsync(
+                    PdfPath,
+                    i,
+                    ThumbnailSize,
+                    ThumbnailSize);
+                thumbnails.Add(thumbnail);
+            }
 
             ThumbnailImages.Clear();
             for (int i = 0; i < thumbnails.Count; i++)
             {
+                using var stream = new MemoryStream(thumbnails[i]);
+                var bitmap = Bitmap.DecodeToWidth(stream, ThumbnailSize);
+                
                 ThumbnailImages.Add(new ThumbnailItem
                 {
-                    Image = thumbnails[i],
+                    Image = bitmap,
                     PageNumber = i + 1
                 });
             }
