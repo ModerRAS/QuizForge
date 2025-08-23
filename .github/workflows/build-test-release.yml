@@ -9,7 +9,8 @@ on:
   workflow_dispatch:
 
 env:
-  DOTNET_VERSIONS: '["8.0.x", "9.0.x"]'
+  DOTNET_8_VERSION: '8.0.x'
+  DOTNET_9_VERSION: '9.0.x'
 
 jobs:
   build-and-test:
@@ -18,7 +19,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        dotnet-version: ${{ fromJson(env.DOTNET_VERSIONS) }}
+        dotnet-version: [${{ env.DOTNET_8_VERSION }}, ${{ env.DOTNET_9_VERSION }}]
     
     steps:
     - name: Checkout code
@@ -57,10 +58,10 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Setup .NET 9.0.x
+    - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '9.0.x'
+        dotnet-version: ${{ env.DOTNET_9_VERSION }}
         
     - name: Restore dependencies
       run: dotnet restore
@@ -177,10 +178,10 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
-    - name: Setup .NET 9.0.x
+    - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '9.0.x'
+        dotnet-version: ${{ env.DOTNET_9_VERSION }}
         
     - name: Restore dependencies
       run: dotnet restore
