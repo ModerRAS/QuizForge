@@ -3,6 +3,7 @@ using QuizForge.Models.Interfaces;
 using QuizForge.Data.Repositories;
 using QuizForge.Core.Interfaces;
 using QuizForge.Infrastructure.Parsers;
+using System.Diagnostics.CodeAnalysis;
 
 namespace QuizForge.Services;
 
@@ -185,10 +186,51 @@ public class QuestionService : IQuestionService
     /// <returns>导出结果</returns>
     public async Task<bool> ExportQuestionBankAsync(QuestionBank questionBank, string filePath, QuestionBankFormat format)
     {
-        // 简化实现：暂时返回true
-        // 原本实现：应该根据格式导出题库到文件
-        await Task.CompletedTask;
-        return true;
+        try
+        {
+            // 验证参数
+            if (questionBank == null)
+            {
+                throw new ArgumentNullException(nameof(questionBank));
+            }
+            
+            if (string.IsNullOrWhiteSpace(filePath))
+            {
+                throw new ArgumentException("文件路径不能为空", nameof(filePath));
+            }
+            
+            if (questionBank.Questions.Count == 0)
+            {
+                throw new ArgumentException("题库中没有题目", nameof(questionBank));
+            }
+            
+            // 确保输出目录存在
+            var outputDir = Path.GetDirectoryName(filePath);
+            if (!string.IsNullOrEmpty(outputDir) && !Directory.Exists(outputDir))
+            {
+                Directory.CreateDirectory(outputDir);
+            }
+            
+            // 根据格式导出
+            if (format == QuestionBankFormat.Markdown)
+            {
+                // 调用Markdown解析器的导出方法
+                return await _markdownParser.ExportAsync(questionBank, filePath);
+            }
+            else if (format == QuestionBankFormat.Excel)
+            {
+                // 调用Excel解析器的导出方法
+                return await _excelParser.ExportAsync(questionBank, filePath);
+            }
+            else
+            {
+                throw new NotSupportedException($"不支持的导出格式: {format}");
+            }
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"导出题库失败: {ex.Message}", ex);
+        }
     }
 
     /// <summary>
@@ -197,10 +239,16 @@ public class QuestionService : IQuestionService
     /// <returns>类别列表</returns>
     public async Task<List<string>> GetAllCategoriesAsync()
     {
-        // 简化实现：返回硬编码的类别列表
-        // 原本实现：应该从数据库获取所有类别
-        await Task.CompletedTask;
-        return new List<string> { "数学", "英语", "物理", "化学", "生物" };
+        try
+        {
+            // 从数据库获取所有类别
+            var categories = await _questionRepository.GetAllCategoriesAsync();
+            return categories.Distinct().OrderBy(c => c).ToList();
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"获取所有类别失败: {ex.Message}", ex);
+        }
     }
 
     /// <summary>
@@ -210,10 +258,35 @@ public class QuestionService : IQuestionService
     /// <returns>创建后的题目数据</returns>
     public async Task<Question> CreateQuestionAsync(Question question)
     {
-        // 简化实现：返回传入的题目
-        // 原本实现：应该保存到数据库并返回创建后的题目
-        await Task.CompletedTask;
-        return question;
+        try
+        {
+            // 验证题目数据
+            if (question == null)
+            {
+                throw new ArgumentNullException(nameof(question));
+            }
+            
+            if (string.IsNullOrWhiteSpace(question.Content))
+            {
+                throw new ArgumentException("题目内容不能为空", nameof(question));
+            }
+            
+            if (question.Type == "MultipleChoice" && 
+                (question.Options == null || question.Options.Count == 0))
+            {
+                throw new ArgumentException("选择题必须包含选项", nameof(question));
+            }
+            
+            // 验证并处理题目
+            question = _questionProcessor.ValidateAndProcessQuestion(question);
+            
+            // 保存到数据库
+            return await _questionRepository.AddQuestionAsync(question);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"创建题目失败: {ex.Message}", ex);
+        }
     }
 
     /// <summary>
@@ -223,10 +296,40 @@ public class QuestionService : IQuestionService
     /// <returns>更新后的题目数据</returns>
     public async Task<Question> UpdateQuestionAsync(Question question)
     {
-        // 简化实现：返回传入的题目
-        // 原本实现：应该更新数据库并返回更新后的题目
-        await Task.CompletedTask;
-        return question;
+        try
+        {
+            // 验证题目数据
+            if (question == null)
+            {
+                throw new ArgumentNullException(nameof(question));
+            }
+            
+            if (question.Id == Guid.Empty)
+            {
+                throw new ArgumentException("题目ID不能为空", nameof(question));
+            }
+            
+            if (string.IsNullOrWhiteSpace(question.Content))
+            {
+                throw new ArgumentException("题目内容不能为空", nameof(question));
+            }
+            
+            if (question.Type == "MultipleChoice" && 
+                (question.Options == null || question.Options.Count == 0))
+            {
+                throw new ArgumentException("选择题必须包含选项", nameof(question));
+            }
+            
+            // 验证并处理题目
+            question = _questionProcessor.ValidateAndProcessQuestion(question);
+            
+            // 更新到数据库
+            return await _questionRepository.UpdateQuestionAsync(question);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"更新题目失败: {ex.Message}", ex);
+        }
     }
 
     /// <summary>
@@ -236,10 +339,21 @@ public class QuestionService : IQuestionService
     /// <returns>删除结果</returns>
     public async Task<bool> DeleteQuestionAsync(Guid id)
     {
-        // 简化实现：返回true
-        // 原本实现：应该从数据库删除题目
-        await Task.CompletedTask;
-        return true;
+        try
+        {
+            // 验证参数
+            if (id == Guid.Empty)
+            {
+                throw new ArgumentException("题目ID不能为空", nameof(id));
+            }
+            
+            // 从数据库删除题目
+            return await _questionRepository.DeleteQuestionAsync(id);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"删除题目失败: {ex.Message}", ex);
+        }
     }
     
     /// <summary>
@@ -249,10 +363,34 @@ public class QuestionService : IQuestionService
     /// <returns>创建后的题库数据</returns>
     public async Task<QuestionBank> CreateQuestionBankAsync(QuestionBank questionBank)
     {
-        // 简化实现：返回传入的题库
-        // 原本实现：应该保存到数据库并返回创建后的题库
-        await Task.CompletedTask;
-        return questionBank;
+        try
+        {
+            // 验证题库数据
+            if (questionBank == null)
+            {
+                throw new ArgumentNullException(nameof(questionBank));
+            }
+            
+            if (string.IsNullOrWhiteSpace(questionBank.Name))
+            {
+                throw new ArgumentException("题库名称不能为空", nameof(questionBank));
+            }
+            
+            // 验证并处理题库
+            if (!_questionProcessor.ValidateQuestionBank(questionBank))
+            {
+                throw new InvalidOperationException("题库数据验证失败");
+            }
+            
+            questionBank = _questionProcessor.ProcessQuestionBank(questionBank);
+            
+            // 保存到数据库
+            return await _questionRepository.AddAsync(questionBank);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"创建题库失败: {ex.Message}", ex);
+        }
     }
     
     /// <summary>
@@ -262,10 +400,21 @@ public class QuestionService : IQuestionService
     /// <returns>题目列表</returns>
     public async Task<List<Question>> GetQuestionsByQuestionBankIdAsync(Guid questionBankId)
     {
-        // 简化实现：返回空列表
-        // 原本实现：应该从数据库获取题目
-        await Task.CompletedTask;
-        return new List<Question>();
+        try
+        {
+            // 验证参数
+            if (questionBankId == Guid.Empty)
+            {
+                throw new ArgumentException("题库ID不能为空", nameof(questionBankId));
+            }
+            
+            // 从数据库获取题目
+            return await _questionRepository.GetQuestionsByBankIdAsync(questionBankId);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"根据题库ID获取题目失败: {ex.Message}", ex);
+        }
     }
     
     /// <summary>
@@ -276,10 +425,42 @@ public class QuestionService : IQuestionService
     /// <returns>导入结果</returns>
     public async Task<bool> ImportQuestionsAsync(Guid questionBankId, List<Question> questions)
     {
-        // 简化实现：返回true
-        // 原本实现：应该将题目导入到数据库
-        await Task.CompletedTask;
-        return true;
+        try
+        {
+            // 验证参数
+            if (questionBankId == Guid.Empty)
+            {
+                throw new ArgumentException("题库ID不能为空", nameof(questionBankId));
+            }
+            
+            if (questions == null || questions.Count == 0)
+            {
+                throw new ArgumentException("题目列表不能为空", nameof(questions));
+            }
+            
+            // 验证题库是否存在
+            var questionBank = await _questionRepository.GetByIdAsync(questionBankId);
+            if (questionBank == null)
+            {
+                throw new Exception($"未找到ID为 {questionBankId} 的题库");
+            }
+            
+            // 处理每个题目
+            var processedQuestions = new List<Question>();
+            foreach (var question in questions)
+            {
+                // 验证并处理题目
+                var processedQuestion = _questionProcessor.ValidateAndProcessQuestion(question);
+                processedQuestions.Add(processedQuestion);
+            }
+            
+            // 批量添加到题库
+            return await _questionRepository.AddQuestionsToBankAsync(questionBankId, processedQuestions);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"导入题目到题库失败: {ex.Message}", ex);
+        }
     }
     
     /// <summary>
@@ -290,10 +471,26 @@ public class QuestionService : IQuestionService
     /// <returns>匹配的题目列表</returns>
     public async Task<List<Question>> SearchQuestionsAsync(Guid questionBankId, string searchText)
     {
-        // 简化实现：返回空列表
-        // 原本实现：应该在数据库中搜索题目
-        await Task.CompletedTask;
-        return new List<Question>();
+        try
+        {
+            // 验证参数
+            if (questionBankId == Guid.Empty)
+            {
+                throw new ArgumentException("题库ID不能为空", nameof(questionBankId));
+            }
+            
+            if (string.IsNullOrWhiteSpace(searchText))
+            {
+                throw new ArgumentException("搜索文本不能为空", nameof(searchText));
+            }
+            
+            // 在数据库中搜索题目
+            return await _questionRepository.SearchQuestionsAsync(questionBankId, searchText);
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"搜索题目失败: {ex.Message}", ex);
+        }
     }
     
     /// <summary>
@@ -302,9 +499,14 @@ public class QuestionService : IQuestionService
     /// <returns>题目列表</returns>
     public async Task<List<Question>> GetAllQuestionsAsync()
     {
-        // 简化实现：返回空列表
-        // 原本实现：应该从数据库获取所有题目
-        await Task.CompletedTask;
-        return new List<Question>();
+        try
+        {
+            // 从数据库获取所有题目
+            return await _questionRepository.GetAllQuestionsAsync();
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"获取所有题目失败: {ex.Message}", ex);
+        }
     }
 }

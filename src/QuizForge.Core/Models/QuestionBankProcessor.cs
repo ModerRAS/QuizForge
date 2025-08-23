@@ -80,6 +80,52 @@ public class QuestionBankProcessor : IQuestionProcessor
 
         return true;
     }
+    
+    /// <summary>
+    /// 验证并处理单个题目
+    /// </summary>
+    /// <param name="question">题目数据</param>
+    /// <returns>处理后的题目数据</returns>
+    public Question ValidateAndProcessQuestion(Question question)
+    {
+        if (question == null)
+        {
+            throw new ArgumentNullException(nameof(question));
+        }
+
+        // 验证题目
+        if (!ValidateQuestion(question))
+        {
+            throw new ArgumentException("题目数据验证失败", nameof(question));
+        }
+
+        // 处理题目数据
+        if (question.Id == Guid.Empty)
+        {
+            question.Id = Guid.NewGuid();
+        }
+
+        if (question.CreatedAt == default)
+        {
+            question.CreatedAt = DateTime.UtcNow;
+        }
+
+        question.UpdatedAt = DateTime.UtcNow;
+
+        // 确保所有选项都有ID
+        if (question.Options != null)
+        {
+            foreach (var option in question.Options)
+            {
+                if (option.Id == Guid.Empty)
+                {
+                    option.Id = Guid.NewGuid();
+                }
+            }
+        }
+
+        return question;
+    }
 
     /// <summary>
     /// 根据类别获取题目

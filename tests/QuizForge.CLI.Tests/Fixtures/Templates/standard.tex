@@ -1,0 +1,79 @@
+\documentclass{article}
+\usepackage{ctex}
+\usepackage{geometry}
+\usepackage{fancyhdr}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{booktabs}
+
+% 页面设置
+\geometry{a4paper, margin=2.5cm}
+
+% 页眉页脚设置
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[C]{\leftmark}
+\fancyfoot[C]{\thepage}
+
+% 标题信息
+\title{{EXAM_TITLE}}
+\author{{SUBJECT}}
+\date{{EXAM_TIME}}
+
+\begin{document}
+
+% 生成标题页
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    
+    {\Huge\bfseries {{EXAM_TITLE}} \par}
+    \vspace{1cm}
+    
+    {\Large {{SUBJECT}} \par}
+    \vspace{0.5cm}
+    
+    {\large 考试时间：{{EXAM_TIME}} \par}
+    \vspace{0.5cm}
+    
+    {\large 总分：{{TOTAL_POINTS}}分 \par}
+    \vspace{0.5cm}
+    
+    {\large 题目数量：{{QUESTION_COUNT}}题 \par}
+    \vspace{2cm}
+    
+    % 学生信息表格
+    \begin{tabular}{|l|l|}
+    \hline
+    姓名： & 学号： \\
+    \hline
+    班级： & 成绩： \\
+    \hline
+    \end{tabular}
+    
+    \vfill
+    
+    {\large 生成时间：{{GENERATION_DATE}} \par}
+\end{titlepage}
+
+% 试卷内容
+\section*{试卷说明}
+请仔细阅读以下说明：
+\begin{enumerate}
+    \item 本试卷共{{QUESTION_COUNT}}题，总分{{TOTAL_POINTS}}分
+    \item 考试时间为{{EXAM_TIME}}
+    \item 请将答案填写在指定位置
+    \item 所有题目均为必答题
+\end{enumerate}
+
+% 题目内容
+{{QUESTIONS_CONTENT}}
+
+% 结束语
+\vspace{1cm}
+\centering
+\textbf{--- 试卷结束 ---}
+
+\end{document}

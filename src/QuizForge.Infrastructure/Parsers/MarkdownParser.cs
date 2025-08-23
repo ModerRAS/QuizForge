@@ -2,6 +2,7 @@ using Markdig;
 using QuizForge.Models;
 using QuizForge.Models.Interfaces;
 using System.Text.RegularExpressions;
+using System.Text;
 
 namespace QuizForge.Infrastructure.Parsers;
 
@@ -270,6 +271,114 @@ public class MarkdownParser : IMarkdownParser
         catch
         {
             return false;
+        }
+    }
+    
+    /// <summary>
+    /// 导出题库到Markdown文件
+    /// </summary>
+    /// <param name="questionBank">题库数据</param>
+    /// <param name="filePath">输出文件路径</param>
+    /// <returns>导出结果</returns>
+    public async Task<bool> ExportAsync(QuestionBank questionBank, string filePath)
+    {
+        try
+        {
+            if (questionBank == null)
+            {
+                throw new ArgumentNullException(nameof(questionBank));
+            }
+            
+            if (string.IsNullOrWhiteSpace(filePath))
+            {
+                throw new ArgumentException("文件路径不能为空", nameof(filePath));
+            }
+            
+            if (questionBank.Questions.Count == 0)
+            {
+                throw new ArgumentException("题库中没有题目", nameof(questionBank));
+            }
+            
+            // 确保输出目录存在
+            var outputDir = Path.GetDirectoryName(filePath);
+            if (!string.IsNullOrEmpty(outputDir) && !Directory.Exists(outputDir))
+            {
+                Directory.CreateDirectory(outputDir);
+            }
+            
+            // 构建Markdown内容
+            var markdown = new StringBuilder();
+            
+            // 添加标题
+            markdown.AppendLine($"# {questionBank.Name}");
+            markdown.AppendLine();
+            
+            // 添加描述
+            if (!string.IsNullOrWhiteSpace(questionBank.Description))
+            {
+                markdown.AppendLine($"**说明：** {questionBank.Description}");
+                markdown.AppendLine();
+            }
+            
+            // 添加统计信息
+            markdown.AppendLine($"**题目数量：** {questionBank.Questions.Count}");
+            markdown.AppendLine($"**创建时间：** {questionBank.CreatedAt:yyyy-MM-dd HH:mm:ss}");
+            markdown.AppendLine($"**更新时间：** {questionBank.UpdatedAt:yyyy-MM-dd HH:mm:ss}");
+            markdown.AppendLine();
+            
+            // 按题目类型分组
+            var questionsByType = questionBank.Questions
+                .GroupBy(q => q.Type)
+                .OrderBy(g => g.Key);
+            
+            foreach (var typeGroup in questionsByType)
+            {
+                markdown.AppendLine($"### {typeGroup.Key}");
+                markdown.AppendLine();
+                
+                var questionNumber = 1;
+                foreach (var question in typeGroup)
+                {
+                    markdown.AppendLine($"{questionNumber}. {question.Content}");
+                    markdown.AppendLine();
+                    
+                    // 添加选项
+                    if (question.Options != null && question.Options.Count > 0)
+                    {
+                        foreach (var option in question.Options)
+                        {
+                            markdown.AppendLine($"- {option.Key}. {option.Value}");
+                        }
+                        markdown.AppendLine();
+                    }
+                    
+                    // 添加答案
+                    markdown.AppendLine($"- 答案：{question.CorrectAnswer}");
+                    
+                    // 添加解析
+                    if (!string.IsNullOrWhiteSpace(question.Explanation))
+                    {
+                        markdown.AppendLine($"- 解析：{question.Explanation}");
+                    }
+                    
+                    // 添加难度和分类
+                    markdown.AppendLine($"- 难度：{question.Difficulty}");
+                    markdown.AppendLine($"- 分类：{question.Category}");
+                    markdown.AppendLine($"- 分值：{question.Points}");
+                    markdown.AppendLine();
+                    
+                    questionNumber++;
+                }
+            }
+            
+            // 写入文件
+            await File.WriteAllTextAsync(filePath, markdown.ToString(), System.Text.Encoding.UTF8);
+            
+            return true;
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"导出题库到Markdown文件失败: {ex.Message}", ex);
         }
     }
 }

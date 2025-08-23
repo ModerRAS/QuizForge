@@ -67,4 +67,47 @@ public interface IQuestionRepository
     /// </summary>
     /// <returns>题目列表</returns>
     Task<List<Question>> GetAllQuestionsAsync();
+    
+    /// <summary>
+    /// 获取所有类别
+    /// </summary>
+    /// <returns>类别列表</returns>
+    Task<List<string>> GetAllCategoriesAsync();
+    
+    /// <summary>
+    /// 添加题目
+    /// </summary>
+    /// <param name="question">题目数据</param>
+    /// <returns>添加后的题目数据</returns>
+    Task<Question> AddQuestionAsync(Question question);
+    
+    /// <summary>
+    /// 更新题目
+    /// </summary>
+    /// <param name="question">题目数据</param>
+    /// <returns>更新后的题目数据</returns>
+    Task<Question> UpdateQuestionAsync(Question question);
+    
+    /// <summary>
+    /// 删除题目
+    /// </summary>
+    /// <param name="id">题目ID</param>
+    /// <returns>删除结果</returns>
+    Task<bool> DeleteQuestionAsync(Guid id);
+    
+    /// <summary>
+    /// 批量添加题目到题库
+    /// </summary>
+    /// <param name="questionBankId">题库ID</param>
+    /// <param name="questions">题目列表</param>
+    /// <returns>添加结果</returns>
+    Task<bool> AddQuestionsToBankAsync(Guid questionBankId, List<Question> questions);
+    
+    /// <summary>
+    /// 搜索题目
+    /// </summary>
+    /// <param name="questionBankId">题库ID</param>
+    /// <param name="searchText">搜索文本</param>
+    /// <returns>匹配的题目列表</returns>
+    Task<List<Question>> SearchQuestionsAsync(Guid questionBankId, string searchText);
 }

@@ -20,4 +20,12 @@ public interface IExcelParser
     /// <param name="filePath">Excel文件路径</param>
     /// <returns>验证结果</returns>
     Task<bool> ValidateFormatAsync(string filePath);
+    
+    /// <summary>
+    /// 导出题库到Excel文件
+    /// </summary>
+    /// <param name="questionBank">题库数据</param>
+    /// <param name="filePath">输出文件路径</param>
+    /// <returns>导出结果</returns>
+    Task<bool> ExportAsync(QuestionBank questionBank, string filePath);
 }

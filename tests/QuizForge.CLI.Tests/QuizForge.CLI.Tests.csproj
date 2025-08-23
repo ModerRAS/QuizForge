@@ -1,0 +1,99 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    
+    <!-- 测试配置 -->
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    
+    <!-- 测试运行器配置 -->
+    <EnableMSTestRunner>true</EnableMSTestRunner>
+    <OutputType>Exe</OutputType>
+    
+    <!-- 代码覆盖率配置 -->
+    <CollectCoverage>true</CollectCoverage>
+    <CoverletOutputFormat>cobertura</CoverletOutputFormat>
+    <CoverletOutput>./TestResults/coverage/</CoverletOutput>
+    <Threshold>90</Threshold>
+    <ThresholdType>line</ThresholdType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- MSTest 框架 -->
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="MSTest.TestAdapter" Version="3.1.1" />
+    <PackageReference Include="MSTest.TestFramework" Version="3.1.1" />
+    
+    <!-- Mock框架 -->
+    <PackageReference Include="Moq" Version="4.20.70" />
+    <PackageReference Include="NSubstitute" Version="5.1.0" />
+    
+    <!-- 测试工具 -->
+    <PackageReference Include="FluentAssertions" Version="6.12.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.1" />
+    
+    <!-- 性能测试 -->
+    <PackageReference Include="BenchmarkDotNet" Version="0.13.12" />
+    
+    <!-- 覆盖率报告 -->
+    <PackageReference Include="coverlet.msbuild" Version="6.0.0" />
+    <PackageReference Include="ReportGenerator" Version="5.2.0" />
+    
+    <!-- 文件操作测试 -->
+    <PackageReference Include="System.IO.Abstractions" Version="19.2.29" />
+    <PackageReference Include="System.IO.Abstractions.TestingHelpers" Version="19.2.29" />
+    
+    <!-- 测试数据生成 -->
+    <PackageReference Include="Bogus" Version="35.5.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 项目引用 -->
+    <ProjectReference Include="../../src/QuizForge.CLI/QuizForge.CLI.csproj" />
+    <ProjectReference Include="../../src/QuizForge.Core/QuizForge.Core.csproj" />
+    <ProjectReference Include="../../src/QuizForge.Infrastructure/QuizForge.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/QuizForge.Services/QuizForge.Services.csproj" />
+    <ProjectReference Include="../../src/QuizForge.Data/QuizForge.Data.csproj" />
+    <ProjectReference Include="../../src/QuizForge.Models/QuizForge.Models.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 复制测试数据 -->
+    <Content Include="MockData/**/*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    
+    <!-- 复制配置文件 -->
+    <Content Include="appsettings.test.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    
+    <!-- 复制LaTeX模板 -->
+    <Content Include="Fixtures/**/*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <!-- 测试运行目标 -->
+  <Target Name="RunTests" AfterTargets="Build">
+    <Exec Command="dotnet test --configuration Release --collect:'XPlat Code Coverage' --logger trx --results-directory TestResults" />
+  </Target>
+  
+  <!-- 生成覆盖率报告 -->
+  <Target Name="GenerateCoverageReport" AfterTargets="RunTests">
+    <Exec Command="reportgenerator -reports:TestResults/coverage/coverage.cobertura.xml -targetdir:TestResults/coverage-report -reporttypes:HtmlInline_AzurePipelines;Cobertura" />
+  </Target>
+  
+  <!-- 运行性能测试 -->
+  <Target Name="RunPerformanceTests" AfterTargets="Build">
+    <Exec Command="dotnet run --configuration Release --project . --filter Performance*" />
+  </Target>
+
+</Project>

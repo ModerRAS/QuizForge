@@ -331,4 +331,227 @@ public class QuestionRepository : IQuestionRepository
             throw new Exception($"获取所有题目失败: {ex.Message}", ex);
         }
     }
+
+    /// <summary>
+    /// 获取所有类别
+    /// </summary>
+    /// <returns>类别列表</returns>
+    public async Task<List<string>> GetAllCategoriesAsync()
+    {
+        try
+        {
+            return await _context.Questions
+                .Where(q => !string.IsNullOrWhiteSpace(q.Category))
+                .Select(q => q.Category)
+                .Distinct()
+                .OrderBy(c => c)
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"获取所有类别失败: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// 添加题目
+    /// </summary>
+    /// <param name="question">题目数据</param>
+    /// <returns>添加后的题目数据</returns>
+    public async Task<Question> AddQuestionAsync(Question question)
+    {
+        try
+        {
+            if (question.Id == Guid.Empty)
+            {
+                question.Id = Guid.NewGuid();
+            }
+
+            question.CreatedAt = DateTime.UtcNow;
+            question.UpdatedAt = DateTime.UtcNow;
+
+            _context.Questions.Add(question);
+            await _context.SaveChangesAsync();
+
+            return question;
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"添加题目失败: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// 更新题目
+    /// </summary>
+    /// <param name="question">题目数据</param>
+    /// <returns>更新后的题目数据</returns>
+    public async Task<Question> UpdateQuestionAsync(Question question)
+    {
+        try
+        {
+            var existingQuestion = await _context.Questions
+                .Include(q => q.Options)
+                .FirstOrDefaultAsync(q => q.Id == question.Id);
+
+            if (existingQuestion == null)
+            {
+                throw new Exception($"未找到ID为 {question.Id} 的题目");
+            }
+
+            // 更新基本信息
+            existingQuestion.Type = question.Type;
+            existingQuestion.Content = question.Content;
+            existingQuestion.Difficulty = question.Difficulty;
+            existingQuestion.Category = question.Category;
+            existingQuestion.CorrectAnswer = question.CorrectAnswer;
+            existingQuestion.Explanation = question.Explanation;
+            existingQuestion.Points = question.Points;
+            existingQuestion.UpdatedAt = DateTime.UtcNow;
+
+            // 处理选项更新
+            var existingOptionIds = existingQuestion.Options.Select(o => o.Id).ToList();
+            var newOptionIds = question.Options.Select(o => o.Id).ToList();
+            var optionsToDelete = existingOptionIds.Except(newOptionIds).ToList();
+
+            foreach (var optionId in optionsToDelete)
+            {
+                var optionToDelete = existingQuestion.Options.FirstOrDefault(o => o.Id == optionId);
+                if (optionToDelete != null)
+                {
+                    existingQuestion.Options.Remove(optionToDelete);
+                }
+            }
+
+            foreach (var option in question.Options)
+            {
+                var existingOption = existingQuestion.Options.FirstOrDefault(o => o.Id == option.Id);
+                
+                if (existingOption == null)
+                {
+                    // 新选项
+                    if (option.Id == Guid.Empty)
+                    {
+                        option.Id = Guid.NewGuid();
+                    }
+                    existingQuestion.Options.Add(option);
+                }
+                else
+                {
+                    // 更新现有选项
+                    existingOption.Key = option.Key;
+                    existingOption.Value = option.Value;
+                    existingOption.IsCorrect = option.IsCorrect;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            return existingQuestion;
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"更新题目失败: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// 删除题目
+    /// </summary>
+    /// <param name="id">题目ID</param>
+    /// <returns>删除结果</returns>
+    public async Task<bool> DeleteQuestionAsync(Guid id)
+    {
+        try
+        {
+            var question = await _context.Questions
+                .Include(q => q.Options)
+                .FirstOrDefaultAsync(q => q.Id == id);
+
+            if (question == null)
+            {
+                return false;
+            }
+
+            _context.Questions.Remove(question);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"删除题目失败: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// 批量添加题目到题库
+    /// </summary>
+    /// <param name="questionBankId">题库ID</param>
+    /// <param name="questions">题目列表</param>
+    /// <returns>添加结果</returns>
+    public async Task<bool> AddQuestionsToBankAsync(Guid questionBankId, List<Question> questions)
+    {
+        try
+        {
+            var questionBank = await _context.QuestionBanks.FindAsync(questionBankId);
+            if (questionBank == null)
+            {
+                return false;
+            }
+
+            foreach (var question in questions)
+            {
+                if (question.Id == Guid.Empty)
+                {
+                    question.Id = Guid.NewGuid();
+                }
+
+                question.CreatedAt = DateTime.UtcNow;
+                question.UpdatedAt = DateTime.UtcNow;
+
+                // 设置题库关联
+                // 注意：这里需要根据实际的数据库关系模型调整
+                _context.Questions.Add(question);
+            }
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"批量添加题目失败: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
+    /// 搜索题目
+    /// </summary>
+    /// <param name="questionBankId">题库ID</param>
+    /// <param name="searchText">搜索文本</param>
+    /// <returns>匹配的题目列表</returns>
+    public async Task<List<Question>> SearchQuestionsAsync(Guid questionBankId, string searchText)
+    {
+        try
+        {
+            var query = _context.Questions
+                .Include(q => q.Options)
+                .Where(q => EF.Property<Guid>(q, "QuestionBankId") == questionBankId);
+
+            // 在题目内容和选项中搜索
+            searchText = searchText.ToLower();
+            query = query.Where(q => 
+                q.Content.ToLower().Contains(searchText) ||
+                q.Category.ToLower().Contains(searchText) ||
+                q.Difficulty.ToLower().Contains(searchText) ||
+                q.Options.Any(o => o.Value.ToLower().Contains(searchText)));
+
+            return await query
+                .OrderBy(q => q.Category)
+                .ThenBy(q => q.Difficulty)
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"搜索题目失败: {ex.Message}", ex);
+        }
+    }
 }

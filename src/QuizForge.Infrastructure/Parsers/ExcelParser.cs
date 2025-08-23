@@ -293,6 +293,112 @@ public class ExcelParser : IExcelParser
     }
 
     /// <summary>
+    /// 导出题库到Excel文件
+    /// </summary>
+    /// <param name="questionBank">题库数据</param>
+    /// <param name="filePath">输出文件路径</param>
+    /// <returns>导出结果</returns>
+    public async Task<bool> ExportAsync(QuestionBank questionBank, string filePath)
+    {
+        try
+        {
+            if (questionBank == null)
+            {
+                throw new ArgumentNullException(nameof(questionBank));
+            }
+            
+            if (string.IsNullOrWhiteSpace(filePath))
+            {
+                throw new ArgumentException("文件路径不能为空", nameof(filePath));
+            }
+            
+            if (questionBank.Questions.Count == 0)
+            {
+                throw new ArgumentException("题库中没有题目", nameof(questionBank));
+            }
+            
+            // 确保输出目录存在
+            var outputDir = Path.GetDirectoryName(filePath);
+            if (!string.IsNullOrEmpty(outputDir) && !Directory.Exists(outputDir))
+            {
+                Directory.CreateDirectory(outputDir);
+            }
+            
+            // 创建新的Excel工作簿
+            using var workbook = new XLWorkbook();
+            var worksheet = workbook.Worksheets.Add("题库");
+            
+            // 添加标题行
+            worksheet.Cell(1, 1).Value = "题型";
+            worksheet.Cell(1, 2).Value = "题目";
+            worksheet.Cell(1, 3).Value = "选项A";
+            worksheet.Cell(1, 4).Value = "选项B";
+            worksheet.Cell(1, 5).Value = "选项C";
+            worksheet.Cell(1, 6).Value = "选项D";
+            worksheet.Cell(1, 7).Value = "答案";
+            worksheet.Cell(1, 8).Value = "难度";
+            worksheet.Cell(1, 9).Value = "分类";
+            worksheet.Cell(1, 10).Value = "分值";
+            worksheet.Cell(1, 11).Value = "解析";
+            
+            // 设置标题行样式
+            var headerRow = worksheet.Row(1);
+            headerRow.Style.Font.Bold = true;
+            headerRow.Style.Fill.BackgroundColor = XLColor.LightGray;
+            
+            // 添加题目数据
+            var currentRow = 2;
+            foreach (var question in questionBank.Questions)
+            {
+                worksheet.Cell(currentRow, 1).Value = question.Type;
+                worksheet.Cell(currentRow, 2).Value = question.Content;
+                worksheet.Cell(currentRow, 7).Value = question.CorrectAnswer;
+                worksheet.Cell(currentRow, 8).Value = question.Difficulty;
+                worksheet.Cell(currentRow, 9).Value = question.Category;
+                worksheet.Cell(currentRow, 10).Value = question.Points;
+                worksheet.Cell(currentRow, 11).Value = question.Explanation;
+                
+                // 添加选项
+                if (question.Options != null && question.Options.Count > 0)
+                {
+                    foreach (var option in question.Options)
+                    {
+                        switch (option.Key.ToUpper())
+                        {
+                            case "A":
+                                worksheet.Cell(currentRow, 3).Value = option.Value;
+                                break;
+                            case "B":
+                                worksheet.Cell(currentRow, 4).Value = option.Value;
+                                break;
+                            case "C":
+                                worksheet.Cell(currentRow, 5).Value = option.Value;
+                                break;
+                            case "D":
+                                worksheet.Cell(currentRow, 6).Value = option.Value;
+                                break;
+                        }
+                    }
+                }
+                
+                currentRow++;
+            }
+            
+            // 自动调整列宽
+            worksheet.Columns().AdjustToContents();
+            
+            // 保存文件
+            workbook.SaveAs(filePath);
+            
+            return true;
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"导出题库到Excel文件失败: {ex.Message}", ex);
+        }
+    }
+
+    /// <summary>
     /// 列索引信息
     /// </summary>
     private struct ColumnIndices
